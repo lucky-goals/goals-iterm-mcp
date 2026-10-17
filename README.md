@@ -1,10 +1,14 @@
 # cc-iterm-mcp
 
-通过 **iTerm2 Python API** 向 MCP 客户端提供终端工具。直接入口为 `serve`，使用 stdio 通信；不需要 Claude/Codex 插件、源码修改、CLI 适配认证或管理 UI。
+English | [简体中文](README.zh-CN.md)
 
-## 安装与启动
+Terminal tools for MCP clients, powered by the **iTerm2 Python API**. The `serve` command runs a stdio MCP server for listing sessions, reading terminal output, sending text and keys, and creating windows and tabs.
 
-需要 macOS、运行中的 iTerm2、Python 3.12。在 iTerm2 的 Settings → General → Magic 中启用 Python API；首次连接时允许 iTerm2 的 API 授权请求（[官方设置说明](https://iterm2.com/documentation-preferences-general.html)）。
+## Installation and startup
+
+Requires macOS, a running iTerm2 instance, and Python 3.12. Enable the Python API in **iTerm2 Settings → General → Magic**, and allow the API authorization request on first connection. See the [official iTerm2 settings documentation](https://iterm2.com/documentation-preferences-general.html).
+
+From the repository directory:
 
 ```sh
 python3.12 -m venv .venv
@@ -13,63 +17,67 @@ python3.12 -m venv .venv
 .venv/bin/python -m cc_iterm_mcp serve
 ```
 
-`serve` 等待 MCP 客户端通过 stdin/stdout 发送协议消息，不是交互式命令行。进程诊断写入 stderr。没有 Python `--reload`。
+`serve` waits for MCP protocol messages on stdin/stdout; it is not an interactive shell. Diagnostics go to stderr. Run it without Python auto-reload.
 
-MCP 客户端配置示例（替换为你的绝对路径）：
+Example MCP client configuration (replace the command with your absolute path):
 
 ```json
 {
   "mcpServers": {
     "iterm": {
-      "command": "/Users/jwyuan/source_code/cc-iterm-mcp/.venv/bin/python",
+      "command": "/absolute/path/to/cc-iterm-mcp/.venv/bin/python",
       "args": ["-m", "cc_iterm_mcp", "serve"]
     }
   }
 }
 ```
 
-可选参数：
+Optional arguments:
 
-- `--read-only`：只暴露枚举和读取工具。
-- `--session-id <ID>`：限制为指定会话，可重复传入。启用后禁止创建窗口/标签页，避免扩大访问范围。
+- `--read-only`: expose only session discovery and read tools.
+- `--session-id <ID>`: restrict access to a specific session; repeat to allow multiple sessions. Window and tab creation is disabled when this restriction is active.
 
-默认可以操作当前用户 iTerm 中的全部会话。每次读写必须传入 `list_sessions` 返回的准确 `session_id`；不通过焦点或标题猜测目标。
+By default, the server can operate on all iTerm sessions belonging to the current user. Every read or send operation requires an exact `session_id` from `list_sessions`; targets are never inferred from focus or titles.
 
-## MCP 工具
+## MCP tools
 
-| 工具 | 参数 | 功能 |
+| Tool | Parameters | Description |
 | --- | --- | --- |
-| `list_sessions` | 无 | 枚举 session、tab、window ID 和会话元数据 |
-| `read_screen` | `session_id` | 读取屏幕行、尺寸和光标位置 |
-| `read_history` | `session_id`, `lines=100` | 读取最近的保留滚动历史，最多 2000 行 |
-| `send_text` | `session_id`, `text` | 原样发送文本，最多 16 KiB，不自动追加换行 |
-| `send_keys` | `session_id`, `key` | 发送一个终端按键序列 |
-| `create_window` | `command`（可选） | 新建默认 profile 窗口，可指定启动命令，返回新目标 ID |
-| `create_tab` | `window_id`, `command`（可选） | 在指定窗口新建标签页，可指定启动命令 |
+| `list_sessions` | None | List session, tab, and window IDs with session metadata. |
+| `read_screen` | `session_id` | Read rendered screen lines, dimensions, and cursor position. |
+| `read_history` | `session_id`, `lines=100` | Read retained scrollback, up to 2,000 lines. |
+| `send_text` | `session_id`, `text` | Send exact text, up to 16 KiB, without appending a newline. |
+| `send_keys` | `session_id`, `key` | Send one terminal key sequence. |
+| `create_window` | Optional `command` | Create a window using the default profile, optionally with a startup command; return its IDs. |
+| `create_tab` | `window_id`, optional `command` | Create a tab in the specified window, optionally with a startup command. |
 
-`key` 支持：`enter`、`tab`、`escape`、`backspace`、`up`、`down`、`left`、`right`、`ctrl_c`、`ctrl_d`、`ctrl_u`、`ctrl_l`。
+Supported keys: `enter`, `tab`, `escape`, `backspace`, `up`, `down`, `left`, `right`, `ctrl_c`, `ctrl_d`, `ctrl_u`, and `ctrl_l`.
 
-文本内的换行、Enter 和控制键由前台程序解释，可能执行命令或退出程序。发送时明确设置 `suppress_broadcast=True`，只发送到指定会话。响应中的 `api_acknowledged` 仅表示 iTerm API 已确认；命令是否完成仍为 `unknown`。失败或超时不会自动重发。
+Embedded newlines, Enter, and control keys are interpreted by the foreground program and may execute commands or exit it. Sends use `suppress_broadcast=True` to target only the specified session. An `api_acknowledged` response confirms the iTerm API call; command completion remains `unknown`. Failed or timed-out sends are never retried automatically.
 
-屏幕和历史是终端渲染结果，不代表 CLI 内部编辑器原文或原始 PTY 字节。服务只在当前进程内串行处理工具操作，不协调其他 MCP 进程或用户手动输入。退出服务只断开 API 连接，不关闭用户会话。
+Screen and history reads return rendered terminal output, not a CLI editor's internal text or raw PTY bytes. Tool operations are serialized within one server process; they are not coordinated with other MCP processes or manual input. Shutting down the server disconnects the API connection without closing user sessions.
 
-## 验证
+## Verification
+
+Run the current automated test suite:
 
 ```sh
 .venv/bin/python -m unittest discover -s tests -v
 ```
 
-2026-10-17 修复连接初始化资源回收缺陷后，当前全部 69 项自动化测试、Ruff、依赖检查和 wheel 构建均通过，详见 [测试记录](docs/test-results.md)。真实 stdio MCP → iTerm Python API 验证覆盖：创建窗口/标签页、发送文本与 Enter、中文/emoji 屏幕读取及非空滚动历史读取；本次创建的两个测试会话均已关闭。
+As of October 17, 2026, all 69 automated tests, Ruff checks, dependency checks, and the wheel build passed after the connection initialization cleanup fix. See the [test report (Chinese)](docs/test-results.md).
 
-可复现的真实联通验证（仅操作本次创建的 `/bin/cat` 会话）：
+Real stdio MCP → iTerm Python API verification covered window and tab creation, text and Enter input, Chinese/emoji screen output, and nonempty scrollback. Both temporary test sessions were closed afterward.
+
+To reproduce the live smoke test, which operates only on newly created `/bin/cat` sessions:
 
 ```sh
-.venv/bin/python scripts/smoke_iterm.py         # 只显示计划
-.venv/bin/python scripts/smoke_iterm.py --run   # 创建、测试并关闭专用会话
+.venv/bin/python scripts/smoke_iterm.py         # Show the plan only
+.venv/bin/python scripts/smoke_iterm.py --run   # Create, test, and close dedicated sessions
 ```
 
-## 当前结构
+## Project structure
 
-运行模块仅保留 MCP 工具、iTerm 后端、读取结果类型、光标坐标换算、事务与连接清理。旧 broker/gateway、管理 UI、CLI 认证和实验实现已删除。
+Runtime modules cover MCP tools, the iTerm backend, read-result types, cursor coordinate conversion, transactions, and connection cleanup. The previous broker/gateway, management UI, CLI certification, and experimental implementations have been removed.
 
-完整的保留/删除依据见 [依赖梳理和清理记录](docs/cleanup-plan.md)，逐模块清单见 [依赖清单](docs/cleanup-dependencies.json)。
+See the [dependency and cleanup record (Chinese)](docs/cleanup-plan.md) for the retention/removal rationale and the [dependency inventory](docs/cleanup-dependencies.json) for the module-level audit.
