@@ -43,12 +43,10 @@ iTerm2 経由でコーディング CLI を操作する前に、その CLI をイ
 
 ## uvx で実行する
 
-現在のソースバージョン：**0.1.2**（PyPI には未公開）。
-
-バージョン 0.1.1 は [PyPI](https://pypi.org/project/goals-iterm-mcp/) で公開されています。リポジトリをクローンせずに実行できます。
+バージョン 0.1.2 は [PyPI](https://pypi.org/project/goals-iterm-mcp/) で公開されています。リポジトリをクローンせずに実行できます。
 
 ```sh
-uvx --python 3.12 goals-iterm-mcp@0.1.1 serve
+uvx --python 3.12 goals-iterm-mcp@0.1.2 serve
 ```
 
 Python のインポートパスは `goals_iterm_mcp`、コマンド名は `goals-iterm-mcp` です。
@@ -58,19 +56,19 @@ Python のインポートパスは `goals_iterm_mcp`、コマンド名は `goals
 以下のプロンプトを、ローカルコマンドの実行と MCP クライアントの設定ができるエージェントに渡してください。`[MCP クライアント]` は Codex デスクトップや Claude Code など、実際に使うクライアント名に置き換えます。ローカルの macOS へのアクセスが必要です。クラウドのみで動作するチャットからは、ローカルの iTerm2 に接続できません。
 
 ```text
-PyPI から goals-iterm-mcp 0.1.1 をインストールし、[MCP クライアント] に設定してください。
+PyPI から goals-iterm-mcp 0.1.2 をインストールし、[MCP クライアント] に設定してください。
 リポジトリ：https://github.com/lucky-goals/goals-iterm-mcp
 
 1. このコンピューターが macOS で、iTerm2 がインストール済みかつ起動中であることを
    確認してください。uv/uvx がなければ、uv の公式手順でインストールしてください。
    Python 3.12 を使い、リポジトリのクローンやプロジェクトの .venv は不要としてください。
 2. 次のコマンドでパッケージを実行できることを確認してください。
-   uvx --python 3.12 goals-iterm-mcp@0.1.1 --help
+   uvx --python 3.12 goals-iterm-mcp@0.1.2 --help
 3. クライアントの既存の MCP 設定を確認し、無関係な設定を保持してください。
    ユーザーレベルの設定で、iterm という名前の stdio サーバーを追加または更新し、
    重複を避けてください。
    command：このコンピューター上の uvx の絶対パス
-   args：["--python", "3.12", "goals-iterm-mcp@0.1.1", "serve"]
+   args：["--python", "3.12", "goals-iterm-mcp@0.1.2", "serve"]
    クライアントが対応する設定形式と場所を使ってください。編集前に既存の設定を
    バックアップし、ほかのサーバーは変更しないでください。
 4. 必要に応じて iTerm2 Python API の有効化と認可ダイアログの承認を案内してください。

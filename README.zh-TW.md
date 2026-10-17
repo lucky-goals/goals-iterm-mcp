@@ -43,12 +43,10 @@ goals-iterm-mcp 透過 **iTerm2 Python API**，將支援 MCP 的 Agent 與電腦
 
 ## 使用 uvx 執行
 
-目前原始碼版本：**0.1.2**（尚未發布至 PyPI）。
-
-0.1.1 已發布至 [PyPI](https://pypi.org/project/goals-iterm-mcp/)，無需複製儲存庫即可執行：
+0.1.2 已發布至 [PyPI](https://pypi.org/project/goals-iterm-mcp/)，無需複製儲存庫即可執行：
 
 ```sh
-uvx --python 3.12 goals-iterm-mcp@0.1.1 serve
+uvx --python 3.12 goals-iterm-mcp@0.1.2 serve
 ```
 
 Python 匯入路徑為 `goals_iterm_mcp`，啟動命令為 `goals-iterm-mcp`。
@@ -58,18 +56,18 @@ Python 匯入路徑為 `goals_iterm_mcp`，啟動命令為 `goals-iterm-mcp`。
 將下列提示詞複製給能執行本機命令、設定 MCP 用戶端的 Agent，把 `[MCP 用戶端]` 替換為實際用戶端，例如 Codex 桌面版或 Claude Code。Agent 需要存取本機 macOS；純雲端聊天無法連接本機 iTerm2。
 
 ```text
-請從 PyPI 安裝 goals-iterm-mcp 0.1.1，並設定至 [MCP 用戶端]。
+請從 PyPI 安裝 goals-iterm-mcp 0.1.2，並設定至 [MCP 用戶端]。
 專案網址：https://github.com/lucky-goals/goals-iterm-mcp
 
 1. 確認本機是 macOS，已安裝並執行 iTerm2。檢查 uv/uvx 是否存在；
    若未安裝，依 uv 官方說明安裝。使用 Python 3.12，不要複製儲存庫，
    不依賴專案目錄中的 .venv。
 2. 執行下列命令，驗證套件可以執行：
-   uvx --python 3.12 goals-iterm-mcp@0.1.1 --help
+   uvx --python 3.12 goals-iterm-mcp@0.1.2 --help
 3. 檢查用戶端現有的 MCP 設定，保留其他設定。在使用者層級設定中新增或更新
    一個名為 iterm 的 stdio 服務，避免重複安裝：
    command：本機 uvx 的絕對路徑
-   args：["--python", "3.12", "goals-iterm-mcp@0.1.1", "serve"]
+   args：["--python", "3.12", "goals-iterm-mcp@0.1.2", "serve"]
    使用該用戶端支援的設定格式與位置。修改現有設定前先備份，不變更其他服務。
 4. 如有需要，指導我啟用 iTerm2 Python API 並核准授權對話框。
    依用戶端支援的方式重新載入 MCP；若需要我手動重新啟動用戶端，請明確告知。

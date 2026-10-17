@@ -43,12 +43,10 @@ Ensure new iTerm windows and tabs inherit the required configuration. goals-iter
 
 ## Run with uvx
 
-Current source version: **0.1.2** (not yet published to PyPI).
-
-Version 0.1.1 is available on [PyPI](https://pypi.org/project/goals-iterm-mcp/). Run it without cloning this repository:
+Version 0.1.2 is available on [PyPI](https://pypi.org/project/goals-iterm-mcp/). Run it without cloning this repository:
 
 ```sh
-uvx --python 3.12 goals-iterm-mcp@0.1.1 serve
+uvx --python 3.12 goals-iterm-mcp@0.1.2 serve
 ```
 
 The Python import path is `goals_iterm_mcp`, and the command is `goals-iterm-mcp`.
@@ -58,18 +56,18 @@ The Python import path is `goals_iterm_mcp`, and the command is `goals-iterm-mcp
 Copy the prompt below into an agent that can run local commands and configure your MCP client. Replace `[MCP client]` with your client, such as Codex desktop or Claude Code. Local macOS access is required; a cloud-only chat cannot connect to your local iTerm2.
 
 ```text
-Please install goals-iterm-mcp 0.1.1 from PyPI and configure it in [MCP client].
+Please install goals-iterm-mcp 0.1.2 from PyPI and configure it in [MCP client].
 Repository: https://github.com/lucky-goals/goals-iterm-mcp
 
 1. Check that this computer runs macOS and has iTerm2 installed and running.
    Check for uv/uvx; if missing, install uv using its official instructions.
    Use Python 3.12. Do not clone the repository or require a project .venv.
 2. Verify the package with:
-   uvx --python 3.12 goals-iterm-mcp@0.1.1 --help
+   uvx --python 3.12 goals-iterm-mcp@0.1.2 --help
 3. Inspect the client's existing MCP configuration and preserve unrelated settings.
    Add or update one user-level stdio server named "iterm", avoiding duplicates:
    command: the absolute path to uvx on this computer
-   args: ["--python", "3.12", "goals-iterm-mcp@0.1.1", "serve"]
+   args: ["--python", "3.12", "goals-iterm-mcp@0.1.2", "serve"]
    Use the client's supported configuration format and location. Back up an
    existing configuration before editing; do not change other servers.
 4. Guide me to enable iTerm2's Python API and approve its authorization dialog
