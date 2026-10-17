@@ -24,7 +24,7 @@ def backend():
 class DirectTests(unittest.IsolatedAsyncioTestCase):
     async def test_tool_surface_and_read_only(self):
         tools = await build_server(ItermTools(backend())).list_tools()
-        self.assertEqual({t.name for t in tools}, {"list_sessions", "read_screen", "read_history", "send_text", "send_keys", "create_window", "create_tab"})
+        self.assertEqual({t.name for t in tools}, {"list_sessions", "read_screen", "read_history", "send_text", "send_keys", "rename_session", "create_window", "create_tab"})
         reads = await build_server(ItermTools(backend()), read_only=True).list_tools()
         self.assertEqual({t.name for t in reads}, {"list_sessions", "read_screen", "read_history"})
 
@@ -96,20 +96,30 @@ class DirectTests(unittest.IsolatedAsyncioTestCase):
     async def test_read_only_write_calls_are_rejected(self):
         fake = backend()
         server = build_server(ItermTools(fake), read_only=True)
-        for name in ("send_text", "send_keys", "create_window", "create_tab"):
+        for name in ("send_text", "send_keys", "rename_session", "create_window", "create_tab"):
             with self.assertRaises(ToolError):
                 await server.call_tool(name, {})
         fake.send.assert_not_awaited()
+        fake.rename.assert_not_awaited()
         fake.create.assert_not_awaited()
 
     async def test_creation_arguments_and_invalid_commands(self):
         fake = backend()
-        fake.create.return_value = {"session_id": "new"}
+        async def create(kind, target_id, command, *, name):
+            sid = f"new-{len(fake.list_sessions.return_value)}"
+            fake.list_sessions.return_value.append({"target": {"session_id": sid}, "name": name})
+            return {"session_id": sid}
+        fake.create.side_effect = create
         server = build_server(ItermTools(fake))
         await server.call_tool("create_window", {"command": "/bin/cat"})
-        fake.create.assert_awaited_with("window", None, "/bin/cat")
+        first_call = fake.create.await_args_list[0]
+        self.assertEqual(first_call.args[:3], ("window", None, "/bin/cat"))
+        self.assertIn("name", first_call.kwargs)
         await server.call_tool("create_tab", {"window_id": "window-1"})
-        fake.create.assert_awaited_with("tab", "window-1", None)
+        second_call = fake.create.await_args_list[1]
+        self.assertEqual(second_call.args[:3], ("tab", "window-1", None))
+        self.assertIn("name", second_call.kwargs)
+        self.assertNotEqual(first_call.kwargs["name"], second_call.kwargs["name"])
         for command in ("", "界" * 6000):
             with self.assertRaises(ToolError):
                 await server.call_tool("create_window", {"command": command})
@@ -146,7 +156,7 @@ build_server(ItermTools(fake)).run()
         async with stdio_client(StdioServerParameters(command=sys.executable, args=["-c", code])) as streams:
             async with ClientSession(*streams) as client:
                 await client.initialize()
-                self.assertEqual(len((await client.list_tools()).tools), 7)
+                self.assertEqual(len((await client.list_tools()).tools), 8)
                 result = await client.call_tool("read_screen", {"session_id": "session-1"})
                 self.assertFalse(result.isError)
                 self.assertEqual(result.structuredContent["screen"]["lines"][0]["text"], "界😀")

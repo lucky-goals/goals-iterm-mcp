@@ -10,6 +10,7 @@ from mcp import ClientSession, StdioServerParameters
 from mcp.client.stdio import stdio_client
 
 from goals_iterm_mcp.direct import DirectItermBackend
+from goals_iterm_mcp.naming import choose_nickname
 
 
 async def smoke() -> dict:
@@ -24,6 +25,7 @@ async def smoke() -> dict:
                 async with ClientSession(*streams) as client:
                     await client.initialize()
                     results["tool_count"] = len((await client.list_tools()).tools)
+                    assert results["tool_count"] == 8
 
                     async def call(name, args):
                         result = await client.call_tool(name, args)
@@ -35,15 +37,37 @@ async def smoke() -> dict:
                     existing = {r["session_id"] for r in before["sessions"]}
                     window = await call("create_window", {"command": "/bin/cat"})
                     assert window["session_id"] not in existing
+                    assert isinstance(window.get("name"), str) and window["name"]
                     created.append(window["session_id"])
                     tab = await call(
                         "create_tab",
                         {"window_id": window["window_id"], "command": "/bin/cat"},
                     )
                     assert tab["session_id"] not in existing | set(created)
+                    assert isinstance(tab.get("name"), str) and tab["name"]
+                    assert tab["name"] != window["name"]
                     created.append(tab["session_id"])
-                    results.update(create_window=True, create_tab=True)
+                    results.update(
+                        create_window=True,
+                        create_tab=True,
+                        unique_names=True,
+                    )
                     target = tab["session_id"]
+                    renamed_name = choose_nickname(
+                        [r.get("name", "") for r in before["sessions"]]
+                        + [window["name"], tab["name"]]
+                    )
+                    renamed = await call("rename_session", {"session_id": target, "name": renamed_name})
+                    assert renamed["name"] == renamed_name
+                    for _ in range(10):
+                        listed = await call("list_sessions", {})
+                        named_row = next(r for r in listed["sessions"] if r["session_id"] == target)
+                        if named_row["title"] == renamed_name:
+                            break
+                        await asyncio.sleep(0.1)
+                    assert named_row["name"] == renamed_name
+                    assert named_row["title"] == renamed_name, repr(named_row["title"])
+                    results["rename_session"] = True
                     await asyncio.sleep(0.3)
                     marker = "cc-iterm-direct-smoke-界😀"
                     sent = await call(
@@ -84,6 +108,14 @@ async def smoke() -> dict:
                             break
                         await asyncio.sleep(0.1)
                     assert results.get("nonempty_history_match")
+            async with stdio_client(params) as streams:
+                async with ClientSession(*streams) as client:
+                    await client.initialize()
+                    listed = await client.call_tool("list_sessions", {})
+                    assert not listed.isError
+                    named_row = next(r for r in listed.structuredContent["sessions"] if r["session_id"] == target)
+                    assert named_row["name"] == renamed_name
+                    results["name_survives_reconnect"] = True
     finally:
         if created:
             backend = DirectItermBackend(broker_epoch="direct-smoke-cleanup")
@@ -119,7 +151,7 @@ def main():
     args = parser.parse_args()
     if not args.run:
         print(
-            "Plan only: create a new window and tab running /bin/cat, verify seven MCP tools, close both test sessions. Add --run to execute."
+            "Plan only: create a new window and tab running /bin/cat, verify eight MCP tools and nickname persistence, close both test sessions. Add --run to execute."
         )
         return
     asyncio.run(smoke())

@@ -20,7 +20,7 @@ goals-iterm-mcp 通过 **iTerm2 Python API**，把支持 MCP 的 Agent 与电脑
 
 > 持续指导项目专用 iTerm 会话中的 Coding CLI，直到它完成登录问题的诊断、修复，并通过相关测试。每个阶段检查进度，必要时补充后续指令，最后按这些完成条件核对结果。不要重复提交仍在执行的任务；遇到超出本次范围的决策时询问我，完成后汇总改动和测试结果。
 
-服务入口为 `serve`，通过 stdio 提供 7 个 MCP 工具，覆盖会话枚举、终端读取、文本与按键发送，以及窗口和标签页创建。
+服务入口为 `serve`，通过 stdio 提供 8 个 MCP 工具，覆盖会话枚举、终端读取、文本与按键发送，窗口和标签页创建，以及会话命名。
 
 ## 前置配置
 
@@ -71,13 +71,13 @@ Python 导入路径为 `goals_iterm_mcp`，启动命令为 `goals-iterm-mcp`。
    使用该客户端支持的配置格式和位置。修改已有配置前先备份，不改动其他服务。
 4. 如有需要，指导我开启 iTerm2 Python API 并批准它的授权弹窗。
    按客户端支持的方式重新加载 MCP；若需要我手动重启客户端，请明确告知。
-5. 验证 MCP 握手、全部 7 个工具的发现，以及只读的 list_sessions 调用。
+5. 验证 MCP 握手、已安装版本的工具发现，以及只读的 list_sessions 调用。
    安装验证期间不要发送终端输入、读取会话正文，也不要创建或关闭窗口。
 6. 报告配置位置、启动命令和验证结果，区分“独立连接成功”和“目标客户端
    已实际加载工具”。如遇阻塞，说明具体还需要完成哪一步。
 ```
 
-安装这个公开包不需要 PyPI 账号或 API Token。上述配置会提供全部 7 个工具；安装检查只枚举会话。
+安装这个公开包不需要 PyPI 账号或 API Token。上述配置会提供已安装版本的全部工具；安装检查只枚举会话。
 
 ## 安装与启动
 
@@ -116,13 +116,18 @@ MCP 客户端配置示例（替换为你的绝对路径）：
 
 | 工具 | 参数 | 功能 |
 | --- | --- | --- |
-| `list_sessions` | 无 | 枚举 session、tab、window ID 和会话元数据 |
+| `list_sessions` | 无 | 枚举 session、tab、window ID、可读的 `name` 和会话元数据 |
 | `read_screen` | `session_id` | 读取屏幕行、尺寸和光标位置 |
 | `read_history` | `session_id`, `lines=100` | 读取最近的保留滚动历史，最多 2000 行 |
 | `send_text` | `session_id`, `text` | 原样发送文本，最多 16 KiB，不自动追加换行 |
 | `send_keys` | `session_id`, `key` | 发送一个终端按键序列 |
 | `create_window` | `command`（可选） | 新建默认 profile 窗口，可指定启动命令，返回新目标 ID |
 | `create_tab` | `window_id`, `command`（可选） | 在指定窗口新建标签页，可指定启动命令 |
+| `rename_session` | `session_id`, `name`（可选） | 重命名现有会话；省略 `name` 时随机分配未使用的昵称。 |
+
+通过 `create_window` 或 `create_tab` 创建的会话会自动获得随机昵称，内置名称池包含 200 个互不相同、长度为 4–7 个字符的名称。已有会话可使用 `rename_session` 命名。自定义名称最多 64 个字符，名称比较不区分大小写。其他存活会话正在使用的名称不可重复分配；会话关闭后名称可以复用。名称池耗尽时，自动命名会在创建会话前报错。
+
+后续对话中按昵称指定会话时，先通过 `list_sessions` 找到对应的准确 `session_id`，再使用该 ID 调用操作工具。
 
 `key` 支持：`enter`、`tab`、`escape`、`backspace`、`up`、`down`、`left`、`right`、`ctrl_c`、`ctrl_d`、`ctrl_u`、`ctrl_l`。
 

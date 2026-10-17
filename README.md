@@ -20,7 +20,7 @@ For example, give the supervising agent this goal:
 
 > Guide the coding CLI in the project's dedicated iTerm session until it has diagnosed the login issue, implemented a fix, and passed the relevant tests. Inspect progress between steps, provide follow-up instructions when needed, and verify the final result against these criteria. Do not duplicate tasks that are still running. Ask me when a decision outside this scope is required, and report completion with the changes and test results.
 
-The `serve` command provides seven stdio MCP tools for listing sessions, reading terminal output, sending text and keys, and creating windows and tabs.
+The `serve` command provides eight stdio MCP tools for listing sessions, reading terminal output, sending text and keys, creating windows and tabs, and naming sessions.
 
 ## Prerequisites
 
@@ -73,7 +73,7 @@ Repository: https://github.com/lucky-goals/goals-iterm-mcp
 4. Guide me to enable iTerm2's Python API and approve its authorization dialog
    if needed. Reload the MCP connection using the client's supported mechanism;
    tell me if I need to restart the client myself.
-5. Verify the MCP handshake, discovery of all seven tools, and a read-only
+5. Verify the MCP handshake, discovery of the installed version’s tools, and a read-only
    list_sessions call. Do not send terminal input, read session contents, or
    create/close windows as part of installation verification.
 6. Report the configuration location, launch command, and verification results.
@@ -81,7 +81,7 @@ Repository: https://github.com/lucky-goals/goals-iterm-mcp
    in the target client. If blocked, explain the specific remaining step.
 ```
 
-Installing this public package does not require a PyPI account or API token. The configured server exposes all seven tools; the installation check above only lists sessions.
+Installing this public package does not require a PyPI account or API token. The configured server exposes the installed version’s tools; the installation check above only lists sessions.
 
 ## Installation and startup
 
@@ -122,13 +122,18 @@ By default, the server can operate on all iTerm sessions belonging to the curren
 
 | Tool | Parameters | Description |
 | --- | --- | --- |
-| `list_sessions` | None | List session, tab, and window IDs with session metadata. |
+| `list_sessions` | None | List session, tab, and window IDs, readable `name`, and session metadata. |
 | `read_screen` | `session_id` | Read rendered screen lines, dimensions, and cursor position. |
 | `read_history` | `session_id`, `lines=100` | Read retained scrollback, up to 2,000 lines. |
 | `send_text` | `session_id`, `text` | Send exact text, up to 16 KiB, without appending a newline. |
 | `send_keys` | `session_id`, `key` | Send one terminal key sequence. |
 | `create_window` | Optional `command` | Create a window using the default profile, optionally with a startup command; return its IDs. |
 | `create_tab` | `window_id`, optional `command` | Create a tab in the specified window, optionally with a startup command. |
+| `rename_session` | `session_id`, optional `name` | Rename an existing session; omit `name` to choose a random unused nickname. |
+
+Sessions created with `create_window` or `create_tab` automatically receive a random nickname from a built-in pool of 200 distinct names, each 4–7 characters long. Existing sessions can be named with `rename_session`. Explicit names may contain up to 64 characters; name comparisons ignore case. Names already used by another live session are rejected; closed sessions release their names. If the pool is exhausted, automatic naming fails before creating a session.
+
+To act on a name mentioned in conversation, first use `list_sessions` to find its exact `session_id`, then pass that ID to the requested tool.
 
 Supported keys: `enter`, `tab`, `escape`, `backspace`, `up`, `down`, `left`, `right`, `ctrl_c`, `ctrl_d`, `ctrl_u`, and `ctrl_l`.
 
