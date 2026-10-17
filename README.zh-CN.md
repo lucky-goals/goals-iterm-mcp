@@ -22,6 +22,12 @@ goals-iterm-mcp 通过 **iTerm2 Python API**，把支持 MCP 的 Agent 与电脑
 
 服务入口为 `serve`，通过 stdio 提供 7 个 MCP 工具，覆盖会话枚举、终端读取、文本与按键发送，以及窗口和标签页创建。
 
+## 先配置好要使用的 Coding CLI
+
+通过 iTerm2 操作某个 Coding Agent 的 CLI 前，请先安装该 CLI，并在 iTerm 环境中完成认证配置：登录对应的 OAuth 账号，或按照该 CLI 支持的方式配置 API Gateway 地址与凭据。先在 iTerm2 中手动启动一次，确认它能正常响应简单的提示词。
+
+同时确保新开的 iTerm 窗口和标签页也能读取所需配置。goals-iterm-mcp 负责操作终端，各个 Coding CLI 使用自己的认证和 API 配置。凭据应保存在 CLI 支持的凭据存储或本机配置中，不要写进发给 Agent 的提示词。
+
 ## 使用 uvx 运行
 
 0.1.0 已发布到 [PyPI](https://pypi.org/project/goals-iterm-mcp/)，无需克隆仓库即可运行：

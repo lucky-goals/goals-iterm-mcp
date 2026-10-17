@@ -22,6 +22,12 @@ For example, give the supervising agent this goal:
 
 The `serve` command provides seven stdio MCP tools for listing sessions, reading terminal output, sending text and keys, and creating windows and tabs.
 
+## Prepare your coding CLIs
+
+Before asking an agent to operate a coding CLI through iTerm2, install that CLI and configure its authentication in the iTerm environment: complete its OAuth login, or configure its API Gateway endpoint and credentials as supported by the CLI. Start it manually in iTerm2 and confirm that it can respond to a simple prompt.
+
+Ensure new iTerm windows and tabs inherit the required configuration. goals-iterm-mcp controls the terminal; each coding CLI uses its own authentication and API configuration. Keep credentials in the CLI's supported credential store or local configuration, rather than including them in agent prompts.
+
 ## Run with uvx
 
 Version 0.1.0 is available on [PyPI](https://pypi.org/project/goals-iterm-mcp/). Run it without cloning this repository:
