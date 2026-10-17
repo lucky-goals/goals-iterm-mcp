@@ -12,8 +12,13 @@ goals-iterm-mcp 通过 **iTerm2 Python API**，把支持 MCP 的 Agent 与电脑
 - **调度不同 Coding CLI**：让 Agent 启动 Claude Code、Codex CLI 或其他 CLI，进入指定项目并提交开发或诊断任务。
 - **在对话中查看进度**：列出窗口和标签页，读取终端输出，汇总各个会话正在做什么。
 - **让多个项目独立运行**：为任务创建专用窗口或标签页，通过明确的 ID 操作目标会话。
+- **围绕目标持续指导其他 CLI**：给 Codex、Claude 等主 Agent 设置目标（goal）和明确的完成条件。它可以通过本 MCP 反复读取其他 CLI 会话的进度、判断下一步、补充指令并核对结果，持续推进任务。目标管理和持续执行由主 Agent 负责，MCP 提供终端操作能力。
 
 典型使用链路是：**手机或电脑上的对话 → 能访问本机 MCP 的 Agent → iTerm2 → Coding CLI**。Codex、Claude、Cursor、WorkBuddy、Trae、Hermes 等工具，只要所用客户端支持本地 stdio MCP，并具备你所需的手机端或远程连接方式，就可以采用这一模式。目前已通过 Codex 桌面版操作 iTerm2 中的 Claude Code 和 Codex CLI 完成人工验证。
+
+例如，可以给主 Agent 这样的目标：
+
+> 持续指导项目专用 iTerm 会话中的 Coding CLI，直到它完成登录问题的诊断、修复，并通过相关测试。每个阶段检查进度，必要时补充后续指令，最后按这些完成条件核对结果。不要重复提交仍在执行的任务；遇到超出本次范围的决策时询问我，完成后汇总改动和测试结果。
 
 服务入口为 `serve`，通过 stdio 提供 7 个 MCP 工具，覆盖会话枚举、终端读取、文本与按键发送，以及窗口和标签页创建。
 

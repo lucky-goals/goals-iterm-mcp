@@ -12,8 +12,13 @@ goals-iterm-mcp connects MCP-capable agents to **iTerm2 through its Python API**
 - **Coordinate coding CLIs:** ask your agent to launch Claude Code, Codex CLI, or another CLI, select a project, and submit a development or diagnosis task.
 - **Check progress in conversation:** list windows and tabs, read terminal output, and ask for a summary of what each session is doing.
 - **Keep projects in separate sessions:** create dedicated windows or tabs and target them by explicit IDs.
+- **Coordinate work toward a persistent goal:** give a supervising agent such as Codex or Claude a goal and clear completion criteria. It can use this MCP to inspect other CLI sessions, assess progress, provide follow-up instructions, and verify results across repeated iterations. The supervising agent manages the goal and continuation; this MCP provides terminal access.
 
 The intended workflow is **phone or desktop conversation → agent with local MCP access → iTerm2 → coding CLI**. You can use this pattern with tools such as Codex, Claude, Cursor, WorkBuddy, Trae, or Hermes where the chosen client supports local stdio MCP and the remote/mobile connection you use. Our manual validation used Codex desktop to operate Claude Code and Codex CLI in iTerm2.
+
+For example, give the supervising agent this goal:
+
+> Guide the coding CLI in the project's dedicated iTerm session until it has diagnosed the login issue, implemented a fix, and passed the relevant tests. Inspect progress between steps, provide follow-up instructions when needed, and verify the final result against these criteria. Do not duplicate tasks that are still running. Ask me when a decision outside this scope is required, and report completion with the changes and test results.
 
 The `serve` command provides seven stdio MCP tools for listing sessions, reading terminal output, sending text and keys, and creating windows and tabs.
 
