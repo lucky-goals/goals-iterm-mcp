@@ -1,0 +1,1802 @@
+{
+  "scope": "stdio MCP over iTerm Python API; seven existing tools only",
+  "before_modules": {
+    "__init__.py": {
+      "lines": 4,
+      "local_imports": []
+    },
+    "__main__.py": {
+      "lines": 319,
+      "local_imports": [
+        "actor_slots",
+        "admin_schema",
+        "admin_server",
+        "admin_state",
+        "admin_targets",
+        "backends",
+        "broker",
+        "core",
+        "credential_rotation",
+        "credentials",
+        "direct",
+        "gateway",
+        "gateway_slot",
+        "ledger",
+        "managed_runtime",
+        "reviewed_context_store",
+        "scheduling",
+        "security",
+        "shutdown",
+        "transport"
+      ]
+    },
+    "actor_restore_runtime.py": {
+      "lines": 122,
+      "local_imports": [
+        "actor_slots",
+        "errors"
+      ]
+    },
+    "actor_slots.py": {
+      "lines": 1538,
+      "local_imports": [
+        "security"
+      ]
+    },
+    "adapter_registry.py": {
+      "lines": 342,
+      "local_imports": []
+    },
+    "adapter_selection.py": {
+      "lines": 342,
+      "local_imports": [
+        "adapter_registry",
+        "adapters",
+        "errors"
+      ]
+    },
+    "adapters.py": {
+      "lines": 857,
+      "local_imports": [
+        "adapter_registry",
+        "backend_types",
+        "claude_screen",
+        "codex_screen",
+        "errors"
+      ]
+    },
+    "admin_schema.py": {
+      "lines": 317,
+      "local_imports": [
+        "errors",
+        "security"
+      ]
+    },
+    "admin_server.py": {
+      "lines": 1364,
+      "local_imports": [
+        "admin_schema",
+        "errors",
+        "security",
+        "shutdown",
+        "transport"
+      ]
+    },
+    "admin_state.py": {
+      "lines": 6296,
+      "local_imports": [
+        "clock",
+        "errors",
+        "reviewed_context",
+        "security"
+      ]
+    },
+    "admin_targets.py": {
+      "lines": 211,
+      "local_imports": [
+        "clock",
+        "errors",
+        "security"
+      ]
+    },
+    "arbitration.py": {
+      "lines": 310,
+      "local_imports": [
+        "clock",
+        "errors",
+        "security"
+      ]
+    },
+    "backend_types.py": {
+      "lines": 220,
+      "local_imports": [
+        "terminal_cells"
+      ]
+    },
+    "backends.py": {
+      "lines": 2681,
+      "local_imports": [
+        "backend_types",
+        "context_sampling",
+        "errors",
+        "shutdown",
+        "terminal_cells",
+        "transaction_reads",
+        "wire_cells"
+      ]
+    },
+    "broker.py": {
+      "lines": 538,
+      "local_imports": [
+        "schema",
+        "security",
+        "shutdown",
+        "transport"
+      ]
+    },
+    "claude_screen.py": {
+      "lines": 1050,
+      "local_imports": [
+        "backend_types",
+        "wire_cells"
+      ]
+    },
+    "clock.py": {
+      "lines": 39,
+      "local_imports": []
+    },
+    "codex_screen.py": {
+      "lines": 411,
+      "local_imports": [
+        "backend_types"
+      ]
+    },
+    "context_sampling.py": {
+      "lines": 397,
+      "local_imports": [
+        "errors",
+        "foreground"
+      ]
+    },
+    "context_source_publications.py": {
+      "lines": 516,
+      "local_imports": [
+        "errors",
+        "reviewed_context",
+        "security"
+      ]
+    },
+    "context_source_reads.py": {
+      "lines": 447,
+      "local_imports": [
+        "errors",
+        "reviewed_context"
+      ]
+    },
+    "core.py": {
+      "lines": 3651,
+      "local_imports": [
+        "adapter_registry",
+        "adapter_selection",
+        "adapters",
+        "arbitration",
+        "clock",
+        "context_sampling",
+        "errors",
+        "observation",
+        "policy",
+        "reviewed_context",
+        "schema"
+      ]
+    },
+    "credential_rotation.py": {
+      "lines": 1721,
+      "local_imports": [
+        "admin_state",
+        "security"
+      ]
+    },
+    "credentials.py": {
+      "lines": 375,
+      "local_imports": [
+        "admin_state",
+        "errors",
+        "security",
+        "transport"
+      ]
+    },
+    "direct.py": {
+      "lines": 176,
+      "local_imports": [
+        "backends",
+        "errors"
+      ]
+    },
+    "errors.py": {
+      "lines": 35,
+      "local_imports": []
+    },
+    "foreground.py": {
+      "lines": 769,
+      "local_imports": []
+    },
+    "gateway.py": {
+      "lines": 764,
+      "local_imports": [
+        "errors",
+        "schema",
+        "transport"
+      ]
+    },
+    "gateway_slot.py": {
+      "lines": 439,
+      "local_imports": [
+        "actor_slots",
+        "security"
+      ]
+    },
+    "keyring.py": {
+      "lines": 711,
+      "local_imports": [
+        "errors"
+      ]
+    },
+    "ledger.py": {
+      "lines": 2700,
+      "local_imports": [
+        "clock",
+        "errors",
+        "keyring",
+        "security"
+      ]
+    },
+    "managed_runtime.py": {
+      "lines": 2928,
+      "local_imports": [
+        "actor_restore_runtime",
+        "actor_slots",
+        "adapter_registry",
+        "adapter_selection",
+        "adapters",
+        "admin_schema",
+        "admin_state",
+        "context_source_publications",
+        "context_source_reads",
+        "credential_rotation",
+        "errors",
+        "policy",
+        "reviewed_context",
+        "security",
+        "slot_provisioning"
+      ]
+    },
+    "observation.py": {
+      "lines": 1727,
+      "local_imports": [
+        "backend_types",
+        "clock",
+        "errors",
+        "security"
+      ]
+    },
+    "policy.py": {
+      "lines": 121,
+      "local_imports": [
+        "arbitration",
+        "clock",
+        "errors",
+        "security"
+      ]
+    },
+    "reviewed_context.py": {
+      "lines": 730,
+      "local_imports": [
+        "adapter_registry",
+        "context_sampling",
+        "errors",
+        "foreground",
+        "security"
+      ]
+    },
+    "reviewed_context_store.py": {
+      "lines": 651,
+      "local_imports": [
+        "errors",
+        "reviewed_context",
+        "security",
+        "transport"
+      ]
+    },
+    "scheduling.py": {
+      "lines": 547,
+      "local_imports": [
+        "errors"
+      ]
+    },
+    "schema.py": {
+      "lines": 94,
+      "local_imports": [
+        "errors",
+        "security"
+      ]
+    },
+    "security.py": {
+      "lines": 244,
+      "local_imports": [
+        "errors"
+      ]
+    },
+    "shutdown.py": {
+      "lines": 185,
+      "local_imports": []
+    },
+    "slot_provisioning.py": {
+      "lines": 1287,
+      "local_imports": [
+        "actor_slots",
+        "security"
+      ]
+    },
+    "terminal_cells.py": {
+      "lines": 594,
+      "local_imports": [
+        "wire_cells"
+      ]
+    },
+    "transaction_reads.py": {
+      "lines": 583,
+      "local_imports": [
+        "errors"
+      ]
+    },
+    "transport.py": {
+      "lines": 695,
+      "local_imports": []
+    },
+    "wire_cells.py": {
+      "lines": 756,
+      "local_imports": []
+    }
+  },
+  "keep_modules": [
+    "__init__.py",
+    "__main__.py",
+    "backend_types.py",
+    "backends.py",
+    "direct.py",
+    "errors.py",
+    "shutdown.py",
+    "transaction_reads.py",
+    "screen_coordinates.py"
+  ],
+  "delete_modules": [
+    "actor_restore_runtime.py",
+    "actor_slots.py",
+    "adapter_registry.py",
+    "adapter_selection.py",
+    "adapters.py",
+    "admin_schema.py",
+    "admin_server.py",
+    "admin_state.py",
+    "admin_targets.py",
+    "arbitration.py",
+    "broker.py",
+    "claude_screen.py",
+    "clock.py",
+    "codex_screen.py",
+    "context_sampling.py",
+    "context_source_publications.py",
+    "context_source_reads.py",
+    "core.py",
+    "credential_rotation.py",
+    "credentials.py",
+    "foreground.py",
+    "gateway.py",
+    "gateway_slot.py",
+    "keyring.py",
+    "ledger.py",
+    "managed_runtime.py",
+    "observation.py",
+    "policy.py",
+    "reviewed_context.py",
+    "reviewed_context_store.py",
+    "scheduling.py",
+    "schema.py",
+    "security.py",
+    "slot_provisioning.py",
+    "terminal_cells.py",
+    "transport.py",
+    "wire_cells.py"
+  ],
+  "test_files_to_extract_or_keep": [
+    "test_direct.py",
+    "test_backends.py",
+    "test_backend_lifecycle.py",
+    "test_iterm_history.py",
+    "test_history_transactions.py",
+    "test_transaction_reads.py",
+    "test_wire_cells.py",
+    "test_bounded_transport_close.py"
+  ],
+  "test_files_to_delete": [
+    "test_action_wait.py",
+    "test_actor_restore_admin.py",
+    "test_actor_restore_lifecycle.py",
+    "test_actor_restore_prepare.py",
+    "test_actor_restore_queries.py",
+    "test_actor_restore_runtime.py",
+    "test_actor_restore_state.py",
+    "test_actor_slot_admin.py",
+    "test_actor_slot_catalog.py",
+    "test_actor_slot_integration.py",
+    "test_actor_slots.py",
+    "test_adapter_registry.py",
+    "test_adapter_routing.py",
+    "test_adapter_selection.py",
+    "test_admin_contract.py",
+    "test_admin_credential_rotation.py",
+    "test_admin_launch.py",
+    "test_admin_rotation_wire.py",
+    "test_admin_server.py",
+    "test_admin_session_transport.py",
+    "test_admin_signing_rotation.py",
+    "test_admin_state.py",
+    "test_admin_state_retirement.py",
+    "test_admin_stop_lifecycle.py",
+    "test_admin_targets.py",
+    "test_admin_wire_schema.py",
+    "test_arbitration.py",
+    "test_backend_foreground_context.py",
+    "test_bounded_stop_launch.py",
+    "test_bounded_stop_settlement.py",
+    "test_broker.py",
+    "test_claude_ascii_probe.py",
+    "test_claude_capture.py",
+    "test_claude_draft_bridge.py",
+    "test_claude_live_probe.py",
+    "test_claude_rendered_spans.py",
+    "test_claude_screen.py",
+    "test_codex_ascii_probe.py",
+    "test_codex_multiline_probe.py",
+    "test_codex_screen.py",
+    "test_configured_binding_runtime.py",
+    "test_configured_binding_schema.py",
+    "test_configured_binding_state.py",
+    "test_context_sampling.py",
+    "test_context_source_publications.py",
+    "test_context_source_reads.py",
+    "test_contract_runtime.py",
+    "test_core.py",
+    "test_core_idle_maintenance.py",
+    "test_core_lifecycle.py",
+    "test_core_quarantine_recovery.py",
+    "test_core_retirement.py",
+    "test_credential_contract_upgrade.py",
+    "test_credential_rotation.py",
+    "test_credentials.py",
+    "test_elicitation_smoke.py",
+    "test_foreground.py",
+    "test_foreground_context_integration.py",
+    "test_gateway.py",
+    "test_gateway_slot.py",
+    "test_gateway_slot_launch.py",
+    "test_gateway_slot_resume.py",
+    "test_gateway_slot_stdio.py",
+    "test_handoff_preview.py",
+    "test_history_initial_reclamation.py",
+    "test_key_activation_capability.py",
+    "test_key_rotation_admission.py",
+    "test_keyring.py",
+    "test_keyring_faults.py",
+    "test_late_result_recovery.py",
+    "test_ledger.py",
+    "test_ledger_clock_reopen.py",
+    "test_ledger_metadata_cas.py",
+    "test_ledger_process_exit.py",
+    "test_ledger_rotation.py",
+    "test_lifecycle_concurrency.py",
+    "test_managed_broker.py",
+    "test_managed_quarantine_review.py",
+    "test_managed_rotation.py",
+    "test_managed_runtime.py",
+    "test_managed_state.py",
+    "test_managed_stdio.py",
+    "test_managed_stop_launch.py",
+    "test_management_retirement.py",
+    "test_memory_quarantine_barrier.py",
+    "test_menu_faults.py",
+    "test_menu_render_wait.py",
+    "test_observation.py",
+    "test_observation_idle.py",
+    "test_observation_lifecycle.py",
+    "test_observer_budget.py",
+    "test_policy.py",
+    "test_profile_credentials.py",
+    "test_quarantine_admin_atomic.py",
+    "test_quarantine_completion_proof.py",
+    "test_quarantine_evidence_producer.py",
+    "test_quarantine_prepare_protocol.py",
+    "test_quarantine_projection.py",
+    "test_quarantine_resolution.py",
+    "test_quarantine_sync.py",
+    "test_read_binding.py",
+    "test_reviewed_bind_runtime.py",
+    "test_reviewed_bind_schema.py",
+    "test_reviewed_bind_state.py",
+    "test_reviewed_context.py",
+    "test_reviewed_context_integration.py",
+    "test_reviewed_context_store.py",
+    "test_rotation_admin_integration.py",
+    "test_runtime_admin_session_fence.py",
+    "test_scheduling.py",
+    "test_send_completion_tracking.py",
+    "test_shutdown_delivery_ownership.py",
+    "test_signing_rotation_consumers.py",
+    "test_slot_provision_runtime.py",
+    "test_slot_provision_state.py",
+    "test_slot_provision_wire.py",
+    "test_slot_provisioning.py",
+    "test_snapshot_pagination.py",
+    "test_stdio.py",
+    "test_stop_coordinator.py",
+    "test_terminal_cells.py",
+    "test_transport.py",
+    "test_write_context_gates.py",
+    "test_writer.py"
+  ],
+  "delete_trees": [
+    "electron",
+    "experiments",
+    "src/cc_iterm_mcp/schemas",
+    "build",
+    "newtests",
+    ".local/admin-app",
+    ".local/electron-acceptance"
+  ],
+  "temporary_trees": [
+    "/tmp/codex-draft-state-work",
+    "/tmp/codex-rust-v0.163.0.7XDD6r"
+  ],
+  "tests_imports_before": {
+    "test_action_wait.py": [
+      "cc_iterm_mcp.backends",
+      "cc_iterm_mcp.clock",
+      "cc_iterm_mcp.core",
+      "cc_iterm_mcp.errors",
+      "cc_iterm_mcp.ledger"
+    ],
+    "test_actor_restore_admin.py": [
+      "cc_iterm_mcp.actor_slots",
+      "cc_iterm_mcp.gateway",
+      "cc_iterm_mcp.security",
+      "cc_iterm_mcp.transport",
+      "tests"
+    ],
+    "test_actor_restore_lifecycle.py": [
+      "cc_iterm_mcp",
+      "cc_iterm_mcp.errors"
+    ],
+    "test_actor_restore_prepare.py": [
+      "cc_iterm_mcp.admin_schema",
+      "cc_iterm_mcp.errors"
+    ],
+    "test_actor_restore_queries.py": [
+      "cc_iterm_mcp.admin_state",
+      "cc_iterm_mcp.clock",
+      "cc_iterm_mcp.errors",
+      "cc_iterm_mcp.ledger"
+    ],
+    "test_actor_restore_runtime.py": [
+      "cc_iterm_mcp.actor_slots",
+      "cc_iterm_mcp.admin_schema",
+      "cc_iterm_mcp.admin_state",
+      "cc_iterm_mcp.backends",
+      "cc_iterm_mcp.core",
+      "cc_iterm_mcp.credentials",
+      "cc_iterm_mcp.errors",
+      "cc_iterm_mcp.ledger",
+      "cc_iterm_mcp.managed_runtime",
+      "cc_iterm_mcp.security"
+    ],
+    "test_actor_restore_state.py": [
+      "cc_iterm_mcp.admin_state",
+      "cc_iterm_mcp.clock",
+      "cc_iterm_mcp.errors",
+      "cc_iterm_mcp.ledger"
+    ],
+    "test_actor_slot_admin.py": [
+      "cc_iterm_mcp.admin_schema",
+      "cc_iterm_mcp.admin_server",
+      "cc_iterm_mcp.errors"
+    ],
+    "test_actor_slot_catalog.py": [
+      "cc_iterm_mcp.actor_slots",
+      "cc_iterm_mcp.security"
+    ],
+    "test_actor_slot_integration.py": [
+      "cc_iterm_mcp.actor_slots",
+      "cc_iterm_mcp.admin_state",
+      "cc_iterm_mcp.errors",
+      "cc_iterm_mcp.ledger",
+      "tests"
+    ],
+    "test_actor_slots.py": [
+      "cc_iterm_mcp.actor_slots",
+      "cc_iterm_mcp.security"
+    ],
+    "test_adapter_registry.py": [
+      "cc_iterm_mcp.adapter_registry"
+    ],
+    "test_adapter_routing.py": [
+      "cc_iterm_mcp.adapter_selection",
+      "cc_iterm_mcp.adapters",
+      "cc_iterm_mcp.backends",
+      "cc_iterm_mcp.core",
+      "cc_iterm_mcp.ledger",
+      "cc_iterm_mcp.managed_runtime"
+    ],
+    "test_adapter_selection.py": [
+      "cc_iterm_mcp.adapter_registry",
+      "cc_iterm_mcp.adapters",
+      "cc_iterm_mcp.backend_types",
+      "cc_iterm_mcp.errors"
+    ],
+    "test_admin_contract.py": [],
+    "test_admin_credential_rotation.py": [
+      "cc_iterm_mcp.admin_state",
+      "cc_iterm_mcp.clock",
+      "cc_iterm_mcp.errors",
+      "cc_iterm_mcp.ledger"
+    ],
+    "test_admin_launch.py": [
+      "cc_iterm_mcp.admin_schema",
+      "cc_iterm_mcp.transport"
+    ],
+    "test_admin_rotation_wire.py": [
+      "cc_iterm_mcp.admin_schema",
+      "cc_iterm_mcp.errors"
+    ],
+    "test_admin_server.py": [
+      "cc_iterm_mcp.admin_server",
+      "cc_iterm_mcp.admin_state",
+      "cc_iterm_mcp.credentials",
+      "cc_iterm_mcp.errors",
+      "cc_iterm_mcp.ledger",
+      "cc_iterm_mcp.transport"
+    ],
+    "test_admin_session_transport.py": [
+      "cc_iterm_mcp.admin_schema",
+      "cc_iterm_mcp.admin_server",
+      "cc_iterm_mcp.admin_state",
+      "cc_iterm_mcp.ledger",
+      "cc_iterm_mcp.transport",
+      "tests.test_admin_server"
+    ],
+    "test_admin_signing_rotation.py": [
+      "cc_iterm_mcp.admin_state",
+      "cc_iterm_mcp.clock",
+      "cc_iterm_mcp.errors",
+      "cc_iterm_mcp.ledger"
+    ],
+    "test_admin_state.py": [
+      "cc_iterm_mcp.admin_state",
+      "cc_iterm_mcp.clock",
+      "cc_iterm_mcp.errors",
+      "cc_iterm_mcp.ledger"
+    ],
+    "test_admin_state_retirement.py": [
+      "cc_iterm_mcp.admin_schema",
+      "cc_iterm_mcp.admin_server",
+      "cc_iterm_mcp.admin_state",
+      "cc_iterm_mcp.errors",
+      "cc_iterm_mcp.ledger"
+    ],
+    "test_admin_stop_lifecycle.py": [
+      "cc_iterm_mcp.admin_state",
+      "cc_iterm_mcp.clock",
+      "cc_iterm_mcp.errors",
+      "cc_iterm_mcp.ledger"
+    ],
+    "test_admin_targets.py": [
+      "cc_iterm_mcp.admin_schema",
+      "cc_iterm_mcp.admin_state",
+      "cc_iterm_mcp.admin_targets",
+      "cc_iterm_mcp.backends",
+      "cc_iterm_mcp.clock",
+      "cc_iterm_mcp.core",
+      "cc_iterm_mcp.errors",
+      "cc_iterm_mcp.ledger",
+      "cc_iterm_mcp.security"
+    ],
+    "test_admin_wire_schema.py": [
+      "cc_iterm_mcp.admin_schema"
+    ],
+    "test_arbitration.py": [
+      "cc_iterm_mcp.arbitration",
+      "cc_iterm_mcp.clock",
+      "cc_iterm_mcp.errors",
+      "cc_iterm_mcp.security"
+    ],
+    "test_backend_foreground_context.py": [
+      "cc_iterm_mcp.backends",
+      "cc_iterm_mcp.errors",
+      "cc_iterm_mcp.foreground"
+    ],
+    "test_backend_lifecycle.py": [
+      "cc_iterm_mcp.backends",
+      "cc_iterm_mcp.errors"
+    ],
+    "test_backends.py": [
+      "cc_iterm_mcp.adapters",
+      "cc_iterm_mcp.backends",
+      "cc_iterm_mcp.errors"
+    ],
+    "test_bounded_stop_launch.py": [
+      "cc_iterm_mcp.admin_schema",
+      "cc_iterm_mcp.credentials",
+      "cc_iterm_mcp.ledger",
+      "cc_iterm_mcp.transport"
+    ],
+    "test_bounded_stop_settlement.py": [
+      "cc_iterm_mcp.backends",
+      "cc_iterm_mcp.core",
+      "cc_iterm_mcp.errors",
+      "cc_iterm_mcp.ledger"
+    ],
+    "test_bounded_transport_close.py": [
+      "cc_iterm_mcp.admin_server",
+      "cc_iterm_mcp.backends",
+      "cc_iterm_mcp.broker",
+      "cc_iterm_mcp.shutdown"
+    ],
+    "test_broker.py": [
+      "cc_iterm_mcp.backends",
+      "cc_iterm_mcp.broker",
+      "cc_iterm_mcp.core",
+      "cc_iterm_mcp.gateway",
+      "cc_iterm_mcp.ledger",
+      "cc_iterm_mcp.transport"
+    ],
+    "test_claude_ascii_probe.py": [
+      "cc_iterm_mcp.backend_types",
+      "cc_iterm_mcp.terminal_cells",
+      "cc_iterm_mcp.wire_cells"
+    ],
+    "test_claude_capture.py": [
+      "cc_iterm_mcp.adapters",
+      "cc_iterm_mcp.backend_types",
+      "cc_iterm_mcp.claude_screen",
+      "cc_iterm_mcp.errors",
+      "cc_iterm_mcp.terminal_cells",
+      "cc_iterm_mcp.wire_cells"
+    ],
+    "test_claude_draft_bridge.py": [],
+    "test_claude_live_probe.py": [],
+    "test_claude_rendered_spans.py": [
+      "cc_iterm_mcp.adapters",
+      "cc_iterm_mcp.backend_types",
+      "cc_iterm_mcp.claude_screen",
+      "cc_iterm_mcp.errors",
+      "cc_iterm_mcp.terminal_cells",
+      "cc_iterm_mcp.wire_cells"
+    ],
+    "test_claude_screen.py": [
+      "cc_iterm_mcp.claude_screen"
+    ],
+    "test_codex_ascii_probe.py": [
+      "cc_iterm_mcp.backend_types",
+      "cc_iterm_mcp.terminal_cells",
+      "cc_iterm_mcp.wire_cells"
+    ],
+    "test_codex_multiline_probe.py": [
+      "cc_iterm_mcp.backend_types",
+      "cc_iterm_mcp.terminal_cells",
+      "cc_iterm_mcp.wire_cells"
+    ],
+    "test_codex_screen.py": [
+      "cc_iterm_mcp.backend_types",
+      "cc_iterm_mcp.codex_screen",
+      "cc_iterm_mcp.terminal_cells"
+    ],
+    "test_configured_binding_runtime.py": [
+      "cc_iterm_mcp.adapter_registry",
+      "cc_iterm_mcp.admin_schema",
+      "cc_iterm_mcp.admin_server",
+      "cc_iterm_mcp.admin_state",
+      "cc_iterm_mcp.admin_targets",
+      "cc_iterm_mcp.backends",
+      "cc_iterm_mcp.broker",
+      "cc_iterm_mcp.clock",
+      "cc_iterm_mcp.context_sampling",
+      "cc_iterm_mcp.core",
+      "cc_iterm_mcp.credentials",
+      "cc_iterm_mcp.foreground",
+      "cc_iterm_mcp.gateway",
+      "cc_iterm_mcp.ledger",
+      "cc_iterm_mcp.managed_runtime",
+      "cc_iterm_mcp.policy",
+      "cc_iterm_mcp.reviewed_context",
+      "cc_iterm_mcp.reviewed_context_store",
+      "cc_iterm_mcp.schema",
+      "cc_iterm_mcp.security",
+      "cc_iterm_mcp.transport"
+    ],
+    "test_configured_binding_schema.py": [],
+    "test_configured_binding_state.py": [
+      "cc_iterm_mcp.admin_state",
+      "cc_iterm_mcp.clock",
+      "cc_iterm_mcp.errors",
+      "cc_iterm_mcp.ledger",
+      "cc_iterm_mcp.reviewed_context",
+      "cc_iterm_mcp.security"
+    ],
+    "test_context_sampling.py": [
+      "cc_iterm_mcp.context_sampling",
+      "cc_iterm_mcp.errors",
+      "cc_iterm_mcp.foreground"
+    ],
+    "test_context_source_publications.py": [
+      "cc_iterm_mcp.context_source_publications",
+      "cc_iterm_mcp.errors",
+      "cc_iterm_mcp.reviewed_context",
+      "cc_iterm_mcp.security"
+    ],
+    "test_context_source_reads.py": [
+      "cc_iterm_mcp.context_source_reads",
+      "cc_iterm_mcp.errors",
+      "cc_iterm_mcp.reviewed_context",
+      "cc_iterm_mcp.reviewed_context_store"
+    ],
+    "test_contract_runtime.py": [
+      "cc_iterm_mcp.errors",
+      "cc_iterm_mcp.schema",
+      "cc_iterm_mcp.security"
+    ],
+    "test_core.py": [
+      "cc_iterm_mcp.backends",
+      "cc_iterm_mcp.clock",
+      "cc_iterm_mcp.core",
+      "cc_iterm_mcp.ledger"
+    ],
+    "test_core_idle_maintenance.py": [
+      "cc_iterm_mcp.backends",
+      "cc_iterm_mcp.clock",
+      "cc_iterm_mcp.core",
+      "cc_iterm_mcp.errors",
+      "cc_iterm_mcp.ledger",
+      "cc_iterm_mcp.managed_runtime",
+      "cc_iterm_mcp.observation"
+    ],
+    "test_core_lifecycle.py": [
+      "cc_iterm_mcp.admin_schema",
+      "cc_iterm_mcp.admin_state",
+      "cc_iterm_mcp.admin_targets",
+      "cc_iterm_mcp.arbitration",
+      "cc_iterm_mcp.backends",
+      "cc_iterm_mcp.clock",
+      "cc_iterm_mcp.core",
+      "cc_iterm_mcp.errors",
+      "cc_iterm_mcp.ledger",
+      "cc_iterm_mcp.security"
+    ],
+    "test_core_quarantine_recovery.py": [
+      "cc_iterm_mcp.backends",
+      "cc_iterm_mcp.core",
+      "cc_iterm_mcp.ledger"
+    ],
+    "test_core_retirement.py": [
+      "cc_iterm_mcp.backends",
+      "cc_iterm_mcp.core",
+      "cc_iterm_mcp.errors",
+      "cc_iterm_mcp.ledger"
+    ],
+    "test_credential_contract_upgrade.py": [
+      "cc_iterm_mcp.credentials",
+      "cc_iterm_mcp.errors",
+      "cc_iterm_mcp.security"
+    ],
+    "test_credential_rotation.py": [
+      "cc_iterm_mcp.credential_rotation",
+      "cc_iterm_mcp.security"
+    ],
+    "test_credentials.py": [
+      "cc_iterm_mcp.credentials",
+      "cc_iterm_mcp.errors",
+      "cc_iterm_mcp.security"
+    ],
+    "test_direct.py": [
+      "cc_iterm_mcp.backend_types",
+      "cc_iterm_mcp.direct"
+    ],
+    "test_elicitation_smoke.py": [],
+    "test_foreground.py": [
+      "cc_iterm_mcp"
+    ],
+    "test_foreground_context_integration.py": [
+      "cc_iterm_mcp.admin_schema",
+      "cc_iterm_mcp.admin_state",
+      "cc_iterm_mcp.backend_types",
+      "cc_iterm_mcp.backends",
+      "cc_iterm_mcp.clock",
+      "cc_iterm_mcp.context_sampling",
+      "cc_iterm_mcp.core",
+      "cc_iterm_mcp.errors",
+      "cc_iterm_mcp.foreground",
+      "cc_iterm_mcp.ledger",
+      "cc_iterm_mcp.managed_runtime",
+      "cc_iterm_mcp.scheduling",
+      "cc_iterm_mcp.schema"
+    ],
+    "test_gateway.py": [
+      "cc_iterm_mcp"
+    ],
+    "test_gateway_slot.py": [
+      "cc_iterm_mcp.actor_slots",
+      "cc_iterm_mcp.gateway_slot",
+      "cc_iterm_mcp.security"
+    ],
+    "test_gateway_slot_launch.py": [
+      "cc_iterm_mcp.__main__",
+      "cc_iterm_mcp.actor_slots"
+    ],
+    "test_gateway_slot_resume.py": [
+      "cc_iterm_mcp"
+    ],
+    "test_gateway_slot_stdio.py": [
+      "cc_iterm_mcp.actor_slots",
+      "tests"
+    ],
+    "test_handoff_preview.py": [
+      "cc_iterm_mcp.admin_schema",
+      "cc_iterm_mcp.admin_state"
+    ],
+    "test_history_initial_reclamation.py": [
+      "cc_iterm_mcp.clock",
+      "cc_iterm_mcp.errors",
+      "cc_iterm_mcp.observation",
+      "cc_iterm_mcp.security"
+    ],
+    "test_history_transactions.py": [
+      "cc_iterm_mcp.backends",
+      "cc_iterm_mcp.errors",
+      "cc_iterm_mcp.transaction_reads"
+    ],
+    "test_iterm_history.py": [
+      "cc_iterm_mcp.backend_types",
+      "cc_iterm_mcp.backends",
+      "cc_iterm_mcp.clock",
+      "cc_iterm_mcp.errors",
+      "cc_iterm_mcp.observation",
+      "cc_iterm_mcp.security"
+    ],
+    "test_key_activation_capability.py": [
+      "cc_iterm_mcp.errors",
+      "cc_iterm_mcp.ledger"
+    ],
+    "test_key_rotation_admission.py": [
+      "cc_iterm_mcp.errors",
+      "cc_iterm_mcp.ledger"
+    ],
+    "test_keyring.py": [
+      "cc_iterm_mcp.errors",
+      "cc_iterm_mcp.keyring"
+    ],
+    "test_keyring_faults.py": [
+      "cc_iterm_mcp.clock",
+      "cc_iterm_mcp.errors",
+      "cc_iterm_mcp.keyring",
+      "cc_iterm_mcp.ledger"
+    ],
+    "test_late_result_recovery.py": [
+      "cc_iterm_mcp.backends",
+      "cc_iterm_mcp.core",
+      "cc_iterm_mcp.errors",
+      "cc_iterm_mcp.ledger"
+    ],
+    "test_ledger.py": [
+      "cc_iterm_mcp.clock",
+      "cc_iterm_mcp.errors",
+      "cc_iterm_mcp.ledger"
+    ],
+    "test_ledger_clock_reopen.py": [],
+    "test_ledger_metadata_cas.py": [
+      "cc_iterm_mcp.clock",
+      "cc_iterm_mcp.errors",
+      "cc_iterm_mcp.ledger"
+    ],
+    "test_ledger_process_exit.py": [
+      "cc_iterm_mcp.ledger"
+    ],
+    "test_ledger_rotation.py": [
+      "cc_iterm_mcp.clock",
+      "cc_iterm_mcp.errors",
+      "cc_iterm_mcp.ledger",
+      "cc_iterm_mcp.security"
+    ],
+    "test_lifecycle_concurrency.py": [
+      "cc_iterm_mcp.backends",
+      "cc_iterm_mcp.clock",
+      "cc_iterm_mcp.core",
+      "cc_iterm_mcp.ledger"
+    ],
+    "test_managed_broker.py": [
+      "cc_iterm_mcp.backends",
+      "cc_iterm_mcp.broker",
+      "cc_iterm_mcp.core",
+      "cc_iterm_mcp.gateway",
+      "cc_iterm_mcp.ledger",
+      "cc_iterm_mcp.transport"
+    ],
+    "test_managed_quarantine_review.py": [
+      "cc_iterm_mcp.admin_schema",
+      "cc_iterm_mcp.admin_state",
+      "cc_iterm_mcp.backends",
+      "cc_iterm_mcp.clock",
+      "cc_iterm_mcp.core",
+      "cc_iterm_mcp.errors",
+      "cc_iterm_mcp.ledger",
+      "cc_iterm_mcp.managed_runtime"
+    ],
+    "test_managed_rotation.py": [
+      "cc_iterm_mcp.admin_schema",
+      "cc_iterm_mcp.admin_state",
+      "cc_iterm_mcp.backends",
+      "cc_iterm_mcp.core",
+      "cc_iterm_mcp.credential_rotation",
+      "cc_iterm_mcp.credentials",
+      "cc_iterm_mcp.errors",
+      "cc_iterm_mcp.ledger",
+      "cc_iterm_mcp.managed_runtime",
+      "cc_iterm_mcp.security"
+    ],
+    "test_managed_runtime.py": [
+      "cc_iterm_mcp.admin_schema",
+      "cc_iterm_mcp.admin_server",
+      "cc_iterm_mcp.admin_state",
+      "cc_iterm_mcp.admin_targets",
+      "cc_iterm_mcp.backends",
+      "cc_iterm_mcp.broker",
+      "cc_iterm_mcp.core",
+      "cc_iterm_mcp.credentials",
+      "cc_iterm_mcp.errors",
+      "cc_iterm_mcp.gateway",
+      "cc_iterm_mcp.ledger",
+      "cc_iterm_mcp.managed_runtime",
+      "cc_iterm_mcp.transport"
+    ],
+    "test_managed_state.py": [
+      "cc_iterm_mcp.admin_state",
+      "cc_iterm_mcp.clock",
+      "cc_iterm_mcp.errors",
+      "cc_iterm_mcp.ledger"
+    ],
+    "test_managed_stdio.py": [
+      "cc_iterm_mcp.admin_schema",
+      "cc_iterm_mcp.credentials",
+      "cc_iterm_mcp.transport"
+    ],
+    "test_managed_stop_launch.py": [
+      "cc_iterm_mcp.admin_schema",
+      "cc_iterm_mcp.credentials",
+      "cc_iterm_mcp.transport"
+    ],
+    "test_management_retirement.py": [
+      "cc_iterm_mcp.admin_schema",
+      "cc_iterm_mcp.admin_state",
+      "cc_iterm_mcp.backends",
+      "cc_iterm_mcp.core",
+      "cc_iterm_mcp.credentials",
+      "cc_iterm_mcp.errors",
+      "cc_iterm_mcp.ledger",
+      "cc_iterm_mcp.managed_runtime"
+    ],
+    "test_memory_quarantine_barrier.py": [
+      "cc_iterm_mcp.backends",
+      "cc_iterm_mcp.core",
+      "cc_iterm_mcp.errors",
+      "cc_iterm_mcp.ledger"
+    ],
+    "test_menu_faults.py": [
+      "cc_iterm_mcp.errors"
+    ],
+    "test_menu_render_wait.py": [
+      "cc_iterm_mcp.errors"
+    ],
+    "test_observation.py": [
+      "cc_iterm_mcp.backend_types",
+      "cc_iterm_mcp.clock",
+      "cc_iterm_mcp.errors",
+      "cc_iterm_mcp.observation",
+      "cc_iterm_mcp.schema",
+      "cc_iterm_mcp.security",
+      "cc_iterm_mcp.terminal_cells"
+    ],
+    "test_observation_idle.py": [
+      "cc_iterm_mcp.clock",
+      "cc_iterm_mcp.errors",
+      "cc_iterm_mcp.observation",
+      "cc_iterm_mcp.security"
+    ],
+    "test_observation_lifecycle.py": [
+      "cc_iterm_mcp.backend_types",
+      "cc_iterm_mcp.clock",
+      "cc_iterm_mcp.errors",
+      "cc_iterm_mcp.observation",
+      "cc_iterm_mcp.security"
+    ],
+    "test_observer_budget.py": [
+      "cc_iterm_mcp.backends",
+      "cc_iterm_mcp.core",
+      "cc_iterm_mcp.ledger"
+    ],
+    "test_policy.py": [
+      "cc_iterm_mcp.clock",
+      "cc_iterm_mcp.errors",
+      "cc_iterm_mcp.policy",
+      "cc_iterm_mcp.security"
+    ],
+    "test_profile_credentials.py": [
+      "cc_iterm_mcp.credentials",
+      "cc_iterm_mcp.errors",
+      "cc_iterm_mcp.security"
+    ],
+    "test_quarantine_admin_atomic.py": [
+      "cc_iterm_mcp.admin_state",
+      "cc_iterm_mcp.clock",
+      "cc_iterm_mcp.errors",
+      "cc_iterm_mcp.ledger"
+    ],
+    "test_quarantine_completion_proof.py": [
+      "cc_iterm_mcp.backends",
+      "cc_iterm_mcp.clock",
+      "cc_iterm_mcp.core",
+      "cc_iterm_mcp.errors",
+      "cc_iterm_mcp.ledger"
+    ],
+    "test_quarantine_evidence_producer.py": [
+      "cc_iterm_mcp.admin_schema",
+      "cc_iterm_mcp.admin_state",
+      "cc_iterm_mcp.backends",
+      "cc_iterm_mcp.core",
+      "cc_iterm_mcp.errors",
+      "cc_iterm_mcp.ledger",
+      "cc_iterm_mcp.managed_runtime"
+    ],
+    "test_quarantine_prepare_protocol.py": [
+      "cc_iterm_mcp.admin_schema",
+      "cc_iterm_mcp.admin_server",
+      "cc_iterm_mcp.admin_state",
+      "cc_iterm_mcp.backends",
+      "cc_iterm_mcp.clock",
+      "cc_iterm_mcp.core",
+      "cc_iterm_mcp.errors",
+      "cc_iterm_mcp.ledger",
+      "cc_iterm_mcp.managed_runtime",
+      "cc_iterm_mcp.transport"
+    ],
+    "test_quarantine_projection.py": [
+      "cc_iterm_mcp.admin_state",
+      "cc_iterm_mcp.clock",
+      "cc_iterm_mcp.errors",
+      "cc_iterm_mcp.ledger"
+    ],
+    "test_quarantine_resolution.py": [
+      "cc_iterm_mcp.clock",
+      "cc_iterm_mcp.errors",
+      "cc_iterm_mcp.ledger"
+    ],
+    "test_quarantine_sync.py": [
+      "cc_iterm_mcp.admin_schema",
+      "cc_iterm_mcp.admin_state",
+      "cc_iterm_mcp.backends",
+      "cc_iterm_mcp.clock",
+      "cc_iterm_mcp.core",
+      "cc_iterm_mcp.errors",
+      "cc_iterm_mcp.ledger",
+      "cc_iterm_mcp.managed_runtime"
+    ],
+    "test_read_binding.py": [
+      "cc_iterm_mcp.admin_state",
+      "cc_iterm_mcp.clock",
+      "cc_iterm_mcp.errors",
+      "cc_iterm_mcp.ledger"
+    ],
+    "test_reviewed_bind_runtime.py": [
+      "cc_iterm_mcp.adapter_registry",
+      "cc_iterm_mcp.admin_schema",
+      "cc_iterm_mcp.admin_server",
+      "cc_iterm_mcp.admin_state",
+      "cc_iterm_mcp.admin_targets",
+      "cc_iterm_mcp.backends",
+      "cc_iterm_mcp.broker",
+      "cc_iterm_mcp.clock",
+      "cc_iterm_mcp.context_sampling",
+      "cc_iterm_mcp.core",
+      "cc_iterm_mcp.credentials",
+      "cc_iterm_mcp.errors",
+      "cc_iterm_mcp.foreground",
+      "cc_iterm_mcp.gateway",
+      "cc_iterm_mcp.ledger",
+      "cc_iterm_mcp.managed_runtime",
+      "cc_iterm_mcp.policy",
+      "cc_iterm_mcp.reviewed_context",
+      "cc_iterm_mcp.reviewed_context_store",
+      "cc_iterm_mcp.schema",
+      "cc_iterm_mcp.security",
+      "cc_iterm_mcp.transport"
+    ],
+    "test_reviewed_bind_schema.py": [],
+    "test_reviewed_bind_state.py": [
+      "cc_iterm_mcp.admin_state",
+      "cc_iterm_mcp.clock",
+      "cc_iterm_mcp.errors",
+      "cc_iterm_mcp.ledger",
+      "cc_iterm_mcp.reviewed_context",
+      "cc_iterm_mcp.security"
+    ],
+    "test_reviewed_context.py": [
+      "cc_iterm_mcp.adapter_registry",
+      "cc_iterm_mcp.context_sampling",
+      "cc_iterm_mcp.errors",
+      "cc_iterm_mcp.foreground",
+      "cc_iterm_mcp.reviewed_context",
+      "cc_iterm_mcp.security"
+    ],
+    "test_reviewed_context_integration.py": [
+      "cc_iterm_mcp.adapter_registry",
+      "cc_iterm_mcp.admin_schema",
+      "cc_iterm_mcp.admin_state",
+      "cc_iterm_mcp.clock",
+      "cc_iterm_mcp.context_sampling",
+      "cc_iterm_mcp.core",
+      "cc_iterm_mcp.errors",
+      "cc_iterm_mcp.foreground",
+      "cc_iterm_mcp.ledger",
+      "cc_iterm_mcp.managed_runtime",
+      "cc_iterm_mcp.policy",
+      "cc_iterm_mcp.reviewed_context",
+      "cc_iterm_mcp.reviewed_context_store"
+    ],
+    "test_reviewed_context_store.py": [
+      "cc_iterm_mcp.reviewed_context",
+      "cc_iterm_mcp.reviewed_context_store",
+      "cc_iterm_mcp.security"
+    ],
+    "test_rotation_admin_integration.py": [
+      "cc_iterm_mcp.admin_schema",
+      "cc_iterm_mcp.admin_server",
+      "cc_iterm_mcp.admin_state",
+      "cc_iterm_mcp.backends",
+      "cc_iterm_mcp.broker",
+      "cc_iterm_mcp.core",
+      "cc_iterm_mcp.credential_rotation",
+      "cc_iterm_mcp.credentials",
+      "cc_iterm_mcp.errors",
+      "cc_iterm_mcp.gateway",
+      "cc_iterm_mcp.ledger",
+      "cc_iterm_mcp.managed_runtime",
+      "cc_iterm_mcp.transport"
+    ],
+    "test_runtime_admin_session_fence.py": [
+      "cc_iterm_mcp.admin_schema",
+      "cc_iterm_mcp.admin_state",
+      "cc_iterm_mcp.backends",
+      "cc_iterm_mcp.core",
+      "cc_iterm_mcp.credentials",
+      "cc_iterm_mcp.errors",
+      "cc_iterm_mcp.ledger",
+      "cc_iterm_mcp.managed_runtime"
+    ],
+    "test_scheduling.py": [
+      "cc_iterm_mcp.backends",
+      "cc_iterm_mcp.core",
+      "cc_iterm_mcp.errors",
+      "cc_iterm_mcp.ledger",
+      "cc_iterm_mcp.scheduling",
+      "cc_iterm_mcp.schema"
+    ],
+    "test_send_completion_tracking.py": [
+      "cc_iterm_mcp.backends",
+      "cc_iterm_mcp.core",
+      "cc_iterm_mcp.errors",
+      "cc_iterm_mcp.ledger"
+    ],
+    "test_shutdown_delivery_ownership.py": [
+      "cc_iterm_mcp.backends",
+      "cc_iterm_mcp.core",
+      "cc_iterm_mcp.errors",
+      "cc_iterm_mcp.ledger"
+    ],
+    "test_signing_rotation_consumers.py": [
+      "cc_iterm_mcp.arbitration",
+      "cc_iterm_mcp.backends",
+      "cc_iterm_mcp.clock",
+      "cc_iterm_mcp.context_sampling",
+      "cc_iterm_mcp.core",
+      "cc_iterm_mcp.errors",
+      "cc_iterm_mcp.foreground",
+      "cc_iterm_mcp.ledger",
+      "cc_iterm_mcp.observation",
+      "cc_iterm_mcp.policy",
+      "cc_iterm_mcp.reviewed_context"
+    ],
+    "test_slot_provision_runtime.py": [
+      "cc_iterm_mcp.actor_slots",
+      "cc_iterm_mcp.admin_schema",
+      "cc_iterm_mcp.admin_state",
+      "cc_iterm_mcp.backends",
+      "cc_iterm_mcp.core",
+      "cc_iterm_mcp.credentials",
+      "cc_iterm_mcp.errors",
+      "cc_iterm_mcp.ledger",
+      "cc_iterm_mcp.managed_runtime",
+      "cc_iterm_mcp.security"
+    ],
+    "test_slot_provision_state.py": [
+      "cc_iterm_mcp.admin_state",
+      "cc_iterm_mcp.clock",
+      "cc_iterm_mcp.errors",
+      "cc_iterm_mcp.ledger",
+      "cc_iterm_mcp.security"
+    ],
+    "test_slot_provision_wire.py": [
+      "cc_iterm_mcp.admin_schema",
+      "cc_iterm_mcp.admin_server",
+      "cc_iterm_mcp.errors",
+      "cc_iterm_mcp.security"
+    ],
+    "test_slot_provisioning.py": [
+      "cc_iterm_mcp.actor_slots",
+      "cc_iterm_mcp.gateway_slot",
+      "cc_iterm_mcp.security",
+      "cc_iterm_mcp.slot_provisioning"
+    ],
+    "test_snapshot_pagination.py": [
+      "cc_iterm_mcp.admin_state",
+      "cc_iterm_mcp.clock",
+      "cc_iterm_mcp.errors",
+      "cc_iterm_mcp.ledger",
+      "cc_iterm_mcp.security"
+    ],
+    "test_stdio.py": [],
+    "test_stop_coordinator.py": [
+      "cc_iterm_mcp.backends",
+      "cc_iterm_mcp.core",
+      "cc_iterm_mcp.errors",
+      "cc_iterm_mcp.ledger",
+      "cc_iterm_mcp.managed_runtime"
+    ],
+    "test_terminal_cells.py": [
+      "cc_iterm_mcp.terminal_cells"
+    ],
+    "test_transaction_reads.py": [
+      "cc_iterm_mcp.errors",
+      "cc_iterm_mcp.transaction_reads"
+    ],
+    "test_transport.py": [
+      "cc_iterm_mcp.transport"
+    ],
+    "test_wire_cells.py": [
+      "cc_iterm_mcp.terminal_cells",
+      "cc_iterm_mcp.wire_cells"
+    ],
+    "test_write_context_gates.py": [
+      "cc_iterm_mcp.backends",
+      "cc_iterm_mcp.clock",
+      "cc_iterm_mcp.core",
+      "cc_iterm_mcp.errors",
+      "cc_iterm_mcp.ledger"
+    ],
+    "test_writer.py": [
+      "cc_iterm_mcp.backends",
+      "cc_iterm_mcp.clock",
+      "cc_iterm_mcp.core",
+      "cc_iterm_mcp.errors",
+      "cc_iterm_mcp.ledger"
+    ]
+  },
+  "scripts_imports_before": {
+    "build_admin_app.py": [],
+    "elicitation_smoke_server.py": [],
+    "prepare_iterm_test.py": [
+      "cc_iterm_mcp.transport"
+    ],
+    "probe_claude_ascii_editor.py": [
+      "cc_iterm_mcp.backends",
+      "cc_iterm_mcp.claude_screen",
+      "cc_iterm_mcp.errors",
+      "cc_iterm_mcp.transport",
+      "cc_iterm_mcp.wire_cells"
+    ],
+    "probe_claude_cells.py": [
+      "cc_iterm_mcp.adapters",
+      "cc_iterm_mcp.backend_types",
+      "cc_iterm_mcp.backends",
+      "cc_iterm_mcp.claude_screen",
+      "cc_iterm_mcp.terminal_cells",
+      "cc_iterm_mcp.transport",
+      "cc_iterm_mcp.wire_cells"
+    ],
+    "probe_claude_mcp_menu.py": [
+      "cc_iterm_mcp.transport"
+    ],
+    "probe_claude_paste_and_clear.py": [
+      "cc_iterm_mcp.transport"
+    ],
+    "probe_claude_unicode_draft.py": [
+      "cc_iterm_mcp.terminal_cells",
+      "cc_iterm_mcp.transport"
+    ],
+    "probe_codex_ascii_editor.py": [
+      "cc_iterm_mcp.backends",
+      "cc_iterm_mcp.errors",
+      "cc_iterm_mcp.transport",
+      "cc_iterm_mcp.wire_cells"
+    ],
+    "probe_codex_multiline_editor.py": [
+      "cc_iterm_mcp.backends",
+      "cc_iterm_mcp.errors",
+      "cc_iterm_mcp.transport",
+      "cc_iterm_mcp.wire_cells"
+    ],
+    "probe_foreground_metadata.py": [
+      "cc_iterm_mcp"
+    ],
+    "probe_iterm_foreground_context.py": [
+      "cc_iterm_mcp",
+      "cc_iterm_mcp.backends",
+      "cc_iterm_mcp.context_sampling",
+      "cc_iterm_mcp.core",
+      "cc_iterm_mcp.errors",
+      "cc_iterm_mcp.foreground",
+      "cc_iterm_mcp.ledger",
+      "cc_iterm_mcp.scheduling"
+    ],
+    "probe_iterm_read.py": [
+      "cc_iterm_mcp.backends",
+      "cc_iterm_mcp.errors",
+      "cc_iterm_mcp.observation",
+      "cc_iterm_mcp.schema",
+      "cc_iterm_mcp.transport"
+    ],
+    "probe_managed_iterm_read.py": [
+      "cc_iterm_mcp.admin_schema",
+      "cc_iterm_mcp.credentials",
+      "cc_iterm_mcp.schema",
+      "cc_iterm_mcp.transport"
+    ],
+    "sync_schemas.py": []
+  },
+  "package_requirements": {
+    "mcp": [
+      "anyio>=4.5",
+      "httpx-sse>=0.4",
+      "httpx<1.0.0,>=0.27.1",
+      "jsonschema>=4.20.0",
+      "pydantic-settings>=2.5.2",
+      "pydantic<3.0.0,>=2.11.0; python_version < '3.14'",
+      "pydantic<3.0.0,>=2.12.0; python_version >= '3.14'",
+      "pyjwt[crypto]>=2.10.1",
+      "python-multipart>=0.0.9",
+      "pywin32>=310; sys_platform == 'win32' and python_version < '3.14'",
+      "pywin32>=311; sys_platform == 'win32' and python_version >= '3.14'",
+      "sse-starlette>=1.6.1",
+      "starlette>=0.27; python_version < '3.14'",
+      "starlette>=0.48.0; python_version >= '3.14'",
+      "typing-extensions>=4.9.0",
+      "typing-inspection>=0.4.1",
+      "uvicorn>=0.31.1; sys_platform != 'emscripten'",
+      "python-dotenv>=1.0.0; extra == 'cli'",
+      "typer>=0.16.0; extra == 'cli'",
+      "rich>=13.9.4; extra == 'rich'",
+      "websockets>=15.0.1; extra == 'ws'"
+    ],
+    "iterm2": [
+      "protobuf",
+      "websockets",
+      "pyobjc; extra == \"full\""
+    ]
+  },
+  "tests_after": [
+    "test_backend_lifecycle.py",
+    "test_backends.py",
+    "test_bounded_transport_close.py",
+    "test_direct.py",
+    "test_history_transactions.py",
+    "test_iterm_history.py",
+    "test_screen_coordinates.py",
+    "test_transaction_reads.py"
+  ],
+  "deleted_repo_paths": [
+    "src/cc_iterm_mcp/actor_restore_runtime.py",
+    "src/cc_iterm_mcp/actor_slots.py",
+    "src/cc_iterm_mcp/adapter_registry.py",
+    "src/cc_iterm_mcp/adapter_selection.py",
+    "src/cc_iterm_mcp/adapters.py",
+    "src/cc_iterm_mcp/admin_schema.py",
+    "src/cc_iterm_mcp/admin_server.py",
+    "src/cc_iterm_mcp/admin_state.py",
+    "src/cc_iterm_mcp/admin_targets.py",
+    "src/cc_iterm_mcp/arbitration.py",
+    "src/cc_iterm_mcp/broker.py",
+    "src/cc_iterm_mcp/claude_screen.py",
+    "src/cc_iterm_mcp/clock.py",
+    "src/cc_iterm_mcp/codex_screen.py",
+    "src/cc_iterm_mcp/context_sampling.py",
+    "src/cc_iterm_mcp/context_source_publications.py",
+    "src/cc_iterm_mcp/context_source_reads.py",
+    "src/cc_iterm_mcp/core.py",
+    "src/cc_iterm_mcp/credential_rotation.py",
+    "src/cc_iterm_mcp/credentials.py",
+    "src/cc_iterm_mcp/foreground.py",
+    "src/cc_iterm_mcp/gateway.py",
+    "src/cc_iterm_mcp/gateway_slot.py",
+    "src/cc_iterm_mcp/keyring.py",
+    "src/cc_iterm_mcp/ledger.py",
+    "src/cc_iterm_mcp/managed_runtime.py",
+    "src/cc_iterm_mcp/observation.py",
+    "src/cc_iterm_mcp/policy.py",
+    "src/cc_iterm_mcp/reviewed_context.py",
+    "src/cc_iterm_mcp/reviewed_context_store.py",
+    "src/cc_iterm_mcp/scheduling.py",
+    "src/cc_iterm_mcp/schema.py",
+    "src/cc_iterm_mcp/security.py",
+    "src/cc_iterm_mcp/slot_provisioning.py",
+    "src/cc_iterm_mcp/terminal_cells.py",
+    "src/cc_iterm_mcp/transport.py",
+    "src/cc_iterm_mcp/wire_cells.py",
+    "tests/test_slot_provision_runtime.py",
+    "tests/test_contract_runtime.py",
+    "tests/test_lifecycle_concurrency.py",
+    "tests/test_context_sampling.py",
+    "tests/test_admin_credential_rotation.py",
+    "tests/test_admin_server.py",
+    "tests/test_context_source_reads.py",
+    "tests/test_managed_rotation.py",
+    "tests/test_quarantine_projection.py",
+    "tests/test_key_activation_capability.py",
+    "tests/test_arbitration.py",
+    "tests/test_core_quarantine_recovery.py",
+    "tests/test_gateway_slot_resume.py",
+    "tests/test_slot_provision_state.py",
+    "tests/test_slot_provisioning.py",
+    "tests/test_quarantine_resolution.py",
+    "tests/test_bounded_stop_settlement.py",
+    "tests/test_rotation_admin_integration.py",
+    "tests/test_actor_restore_state.py",
+    "tests/test_actor_slots.py",
+    "tests/test_configured_binding_state.py",
+    "tests/test_configured_binding_runtime.py",
+    "tests/test_ledger_rotation.py",
+    "tests/test_quarantine_evidence_producer.py",
+    "tests/test_claude_ascii_probe.py",
+    "tests/test_codex_multiline_probe.py",
+    "tests/test_credential_rotation.py",
+    "tests/test_management_retirement.py",
+    "tests/test_menu_render_wait.py",
+    "tests/test_core_lifecycle.py",
+    "tests/test_action_wait.py",
+    "tests/test_codex_ascii_probe.py",
+    "tests/test_slot_provision_wire.py",
+    "tests/test_managed_quarantine_review.py",
+    "tests/test_writer.py",
+    "tests/test_gateway.py",
+    "tests/test_observation_idle.py",
+    "tests/test_actor_slot_catalog.py",
+    "tests/test_quarantine_completion_proof.py",
+    "tests/test_ledger_clock_reopen.py",
+    "tests/test_actor_slot_admin.py",
+    "tests/test_actor_restore_admin.py",
+    "tests/test_context_source_publications.py",
+    "tests/test_stdio.py",
+    "tests/test_gateway_slot.py",
+    "tests/test_observation.py",
+    "tests/test_reviewed_bind_schema.py",
+    "tests/test_broker.py",
+    "tests/test_core.py",
+    "tests/test_ledger_process_exit.py",
+    "tests/test_adapter_registry.py",
+    "tests/test_quarantine_sync.py",
+    "tests/test_managed_stdio.py",
+    "tests/test_history_initial_reclamation.py",
+    "tests/test_reviewed_context_integration.py",
+    "tests/test_reviewed_bind_state.py",
+    "tests/test_actor_restore_lifecycle.py",
+    "tests/test_scheduling.py",
+    "tests/test_actor_restore_runtime.py",
+    "tests/test_managed_state.py",
+    "tests/test_credential_contract_upgrade.py",
+    "tests/test_actor_slot_integration.py",
+    "tests/test_signing_rotation_consumers.py",
+    "tests/test_core_retirement.py",
+    "tests/test_claude_rendered_spans.py",
+    "tests/test_credentials.py",
+    "tests/test_adapter_routing.py",
+    "tests/test_bounded_stop_launch.py",
+    "tests/test_reviewed_bind_runtime.py",
+    "tests/test_handoff_preview.py",
+    "tests/test_admin_contract.py",
+    "tests/test_terminal_cells.py",
+    "tests/test_admin_launch.py",
+    "tests/test_transport.py",
+    "tests/test_admin_stop_lifecycle.py",
+    "tests/test_runtime_admin_session_fence.py",
+    "tests/test_keyring_faults.py",
+    "tests/test_write_context_gates.py",
+    "tests/test_read_binding.py",
+    "tests/test_admin_wire_schema.py",
+    "tests/test_quarantine_prepare_protocol.py",
+    "tests/test_claude_screen.py",
+    "tests/test_admin_targets.py",
+    "tests/test_actor_restore_queries.py",
+    "tests/test_menu_faults.py",
+    "tests/test_foreground.py",
+    "tests/test_claude_draft_bridge.py",
+    "tests/test_gateway_slot_launch.py",
+    "tests/test_claude_live_probe.py",
+    "tests/test_core_idle_maintenance.py",
+    "tests/test_gateway_slot_stdio.py",
+    "tests/test_stop_coordinator.py",
+    "tests/test_quarantine_admin_atomic.py",
+    "tests/test_reviewed_context_store.py",
+    "tests/test_elicitation_smoke.py",
+    "tests/test_ledger_metadata_cas.py",
+    "tests/test_managed_stop_launch.py",
+    "tests/test_admin_signing_rotation.py",
+    "tests/test_keyring.py",
+    "tests/test_observation_lifecycle.py",
+    "tests/test_managed_broker.py",
+    "tests/test_backend_foreground_context.py",
+    "tests/test_claude_capture.py",
+    "tests/test_admin_state.py",
+    "tests/test_managed_runtime.py",
+    "tests/test_adapter_selection.py",
+    "tests/test_observer_budget.py",
+    "tests/test_late_result_recovery.py",
+    "tests/test_admin_rotation_wire.py",
+    "tests/test_send_completion_tracking.py",
+    "tests/test_shutdown_delivery_ownership.py",
+    "tests/test_configured_binding_schema.py",
+    "tests/test_memory_quarantine_barrier.py",
+    "tests/test_admin_state_retirement.py",
+    "tests/test_key_rotation_admission.py",
+    "tests/test_foreground_context_integration.py",
+    "tests/test_policy.py",
+    "tests/test_ledger.py",
+    "tests/test_profile_credentials.py",
+    "tests/test_admin_session_transport.py",
+    "tests/test_reviewed_context.py",
+    "tests/test_actor_restore_prepare.py",
+    "tests/test_snapshot_pagination.py",
+    "tests/test_wire_cells.py",
+    "tests/test_codex_screen.py",
+    "electron",
+    "experiments",
+    "src/cc_iterm_mcp/schemas",
+    "build",
+    "newtests",
+    ".local/admin-app",
+    ".local/electron-acceptance",
+    "scripts/sync_schemas.py",
+    "scripts/build_admin_app.py",
+    "scripts/probe_claude_unicode_draft.py",
+    "scripts/__pycache__",
+    "scripts/probe_managed_iterm_read.py",
+    "scripts/probe_claude_paste_and_clear.py",
+    "scripts/probe_claude_ascii_editor.py",
+    "scripts/probe_claude_mcp_menu.py",
+    "scripts/probe_codex_multiline_editor.py",
+    "scripts/probe_claude_cells.py",
+    "scripts/probe_iterm_read.py",
+    "scripts/elicitation_smoke_server.py",
+    "scripts/probe_codex_ascii_editor.py",
+    "scripts/probe_foreground_metadata.py",
+    "scripts/prepare_iterm_test.py",
+    "scripts/probe_iterm_foreground_context.py",
+    "docs/configured-binding-runtime.md",
+    "docs/iterm-design",
+    "docs/recovery-integration-plan.md",
+    "docs/.DS_Store",
+    "docs/reviewed-configuration-source.md",
+    "docs/managed-control-runtime.md",
+    "docs/host-elicitation-smoke.md",
+    "docs/adapter-certification-status.md",
+    "docs/bounded-stop-plan.md",
+    "docs/host-elicitation-compatibility.md",
+    "docs/design-v0.2",
+    "docs/writable-context-lifecycle.md",
+    "docs/native-admin-ui.md",
+    "docs/claude-input-profile-evidence.md",
+    "docs/foreground-context-sampling.md",
+    "docs/implementation-checkpoint.json",
+    "docs/iTerm2-MCP-设计评审稿-v0.1.md",
+    "docs/qa-cc-codex-iterm-mcp.md",
+    "docs/iterm-cell-semantics.md",
+    "docs/dependency-baseline.md",
+    "docs/history-read-semantics.md",
+    "docs/credential-rotation-plan.md",
+    "docs/production-adapter-routing-plan.md",
+    "docs/target-lifecycle.md",
+    "docs/admin-queries.schema.json",
+    "docs/iterm-native-feature-delta.md",
+    "docs/source-review-creation-plan.md",
+    "docs/cli-internal-state-plan.md",
+    "docs/development-progress.md",
+    "docs/runtime-interfaces.md",
+    "docs/admin-runtime-wire.schema.json",
+    "docs/mcp-runtime-compatibility.md",
+    "docs/admin-target-discovery.md",
+    "docs/runtime-admin-decisions.md",
+    "docs/cli-probe-findings.md",
+    "docs/backend-scheduling.md",
+    "docs/admin-runtime-contract.md",
+    "src/cc_iterm_mcp/__pycache__",
+    "tests/__pycache__",
+    "src/cc_iterm_mcp.egg-info",
+    ".pytest_cache",
+    ".ruff_cache"
+  ],
+  "deleted_temporary_paths": [
+    "/tmp/codex-draft-state-work",
+    "/tmp/codex-rust-v0.163.0.7XDD6r",
+    "/tmp/codex-pinned-Cargo.toml",
+    "/tmp/codex-pinned-Cargo.lock"
+  ],
+  "after_module_imports": {
+    "transaction_reads.py": [
+      "errors"
+    ],
+    "shutdown.py": [],
+    "__init__.py": [],
+    "backends.py": [
+      "backend_types",
+      "errors",
+      "screen_coordinates",
+      "shutdown",
+      "transaction_reads"
+    ],
+    "backend_types.py": [],
+    "direct.py": [
+      "backends",
+      "errors"
+    ],
+    "errors.py": [],
+    "__main__.py": [
+      "direct"
+    ],
+    "screen_coordinates.py": []
+  },
+  "wheel_module_count": 9,
+  "validation": {
+    "focused_tests": 59,
+    "ruff": "passed",
+    "pip_check": "passed",
+    "wheel_modules": 9,
+    "wheel_tools": 7,
+    "wheel_sha256": "afad3e66e99201f96c111c86e9a08f3cd96630ffd37115f80e45d2813176b62e",
+    "live_mcp": {
+      "tool_count": 7,
+      "create_window": true,
+      "create_tab": true,
+      "send_text_ack": true,
+      "send_key_ack": true,
+      "unicode_screen_match": true,
+      "nonempty_history_match": true,
+      "owned_sessions_closed": 2
+    },
+    "smoke_configuration_removed": true,
+    "smoke_processes_stopped": 3
+  },
+  "after_module_lines": {
+    "transaction_reads.py": 583,
+    "shutdown.py": 185,
+    "__init__.py": 3,
+    "backends.py": 1819,
+    "backend_types.py": 63,
+    "direct.py": 176,
+    "errors.py": 7,
+    "__main__.py": 30,
+    "screen_coordinates.py": 195
+  },
+  "status": "completed"
+}

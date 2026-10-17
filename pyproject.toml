@@ -1,0 +1,19 @@
+[build-system]
+requires = ["setuptools==80.9.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "cc-iterm-mcp"
+version = "0.2.0.dev0"
+description = "MCP tools backed by the iTerm2 Python API"
+requires-python = ">=3.12,<3.13"
+dependencies = [
+  "mcp==1.30.0",
+  "iterm2==2.30",
+]
+
+[project.scripts]
+cc-iterm-mcp = "cc_iterm_mcp.__main__:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
