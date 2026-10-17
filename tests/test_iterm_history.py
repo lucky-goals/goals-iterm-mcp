@@ -10,9 +10,9 @@ try:
 except ImportError:  # pragma: no cover - the optional SDK is test-only
     iterm2 = None
 
-from cc_iterm_mcp.backend_types import CaptureDTO, CaptureLineDTO
-from cc_iterm_mcp.backends import ItermBackend, _bound_capture, _capture_size
-from cc_iterm_mcp.errors import DomainError
+from goals_iterm_mcp.backend_types import CaptureDTO, CaptureLineDTO
+from goals_iterm_mcp.backends import ItermBackend, _bound_capture, _capture_size
+from goals_iterm_mcp.errors import DomainError
 
 
 @unittest.skipIf(iterm2 is None, "optional iterm2 SDK is not installed")

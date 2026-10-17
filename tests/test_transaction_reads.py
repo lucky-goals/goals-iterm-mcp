@@ -6,8 +6,8 @@ import asyncio
 import math
 import unittest
 
-from cc_iterm_mcp.errors import DomainError
-from cc_iterm_mcp.transaction_reads import TransactionReadSupervisor, _SerialGate
+from goals_iterm_mcp.errors import DomainError
+from goals_iterm_mcp.transaction_reads import TransactionReadSupervisor, _SerialGate
 
 
 class FakeTransaction:

@@ -9,7 +9,7 @@ import sys
 from mcp import ClientSession, StdioServerParameters
 from mcp.client.stdio import stdio_client
 
-from cc_iterm_mcp.direct import DirectItermBackend
+from goals_iterm_mcp.direct import DirectItermBackend
 
 
 async def smoke() -> dict:
@@ -18,7 +18,7 @@ async def smoke() -> dict:
     try:
         async with asyncio.timeout(45):
             params = StdioServerParameters(
-                command=sys.executable, args=["-m", "cc_iterm_mcp", "serve"]
+                command=sys.executable, args=["-m", "goals_iterm_mcp", "serve"]
             )
             async with stdio_client(params) as streams:
                 async with ClientSession(*streams) as client:

@@ -22,7 +22,7 @@ def main() -> None:
     try:
         run(session_ids=args.session_id, read_only=args.read_only)
     except (Exception, KeyboardInterrupt) as exc:
-        print(f"cc-iterm-mcp stopped: {type(exc).__name__}", file=sys.stderr)
+        print(f"goals-iterm-mcp stopped: {type(exc).__name__}", file=sys.stderr)
         raise SystemExit(1) from None
 
 

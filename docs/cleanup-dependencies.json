@@ -547,7 +547,7 @@
   "delete_trees": [
     "electron",
     "experiments",
-    "src/cc_iterm_mcp/schemas",
+    "src/goals_iterm_mcp/schemas",
     "build",
     "newtests",
     ".local/admin-app",
@@ -559,911 +559,911 @@
   ],
   "tests_imports_before": {
     "test_action_wait.py": [
-      "cc_iterm_mcp.backends",
-      "cc_iterm_mcp.clock",
-      "cc_iterm_mcp.core",
-      "cc_iterm_mcp.errors",
-      "cc_iterm_mcp.ledger"
+      "goals_iterm_mcp.backends",
+      "goals_iterm_mcp.clock",
+      "goals_iterm_mcp.core",
+      "goals_iterm_mcp.errors",
+      "goals_iterm_mcp.ledger"
     ],
     "test_actor_restore_admin.py": [
-      "cc_iterm_mcp.actor_slots",
-      "cc_iterm_mcp.gateway",
-      "cc_iterm_mcp.security",
-      "cc_iterm_mcp.transport",
+      "goals_iterm_mcp.actor_slots",
+      "goals_iterm_mcp.gateway",
+      "goals_iterm_mcp.security",
+      "goals_iterm_mcp.transport",
       "tests"
     ],
     "test_actor_restore_lifecycle.py": [
-      "cc_iterm_mcp",
-      "cc_iterm_mcp.errors"
+      "goals_iterm_mcp",
+      "goals_iterm_mcp.errors"
     ],
     "test_actor_restore_prepare.py": [
-      "cc_iterm_mcp.admin_schema",
-      "cc_iterm_mcp.errors"
+      "goals_iterm_mcp.admin_schema",
+      "goals_iterm_mcp.errors"
     ],
     "test_actor_restore_queries.py": [
-      "cc_iterm_mcp.admin_state",
-      "cc_iterm_mcp.clock",
-      "cc_iterm_mcp.errors",
-      "cc_iterm_mcp.ledger"
+      "goals_iterm_mcp.admin_state",
+      "goals_iterm_mcp.clock",
+      "goals_iterm_mcp.errors",
+      "goals_iterm_mcp.ledger"
     ],
     "test_actor_restore_runtime.py": [
-      "cc_iterm_mcp.actor_slots",
-      "cc_iterm_mcp.admin_schema",
-      "cc_iterm_mcp.admin_state",
-      "cc_iterm_mcp.backends",
-      "cc_iterm_mcp.core",
-      "cc_iterm_mcp.credentials",
-      "cc_iterm_mcp.errors",
-      "cc_iterm_mcp.ledger",
-      "cc_iterm_mcp.managed_runtime",
-      "cc_iterm_mcp.security"
+      "goals_iterm_mcp.actor_slots",
+      "goals_iterm_mcp.admin_schema",
+      "goals_iterm_mcp.admin_state",
+      "goals_iterm_mcp.backends",
+      "goals_iterm_mcp.core",
+      "goals_iterm_mcp.credentials",
+      "goals_iterm_mcp.errors",
+      "goals_iterm_mcp.ledger",
+      "goals_iterm_mcp.managed_runtime",
+      "goals_iterm_mcp.security"
     ],
     "test_actor_restore_state.py": [
-      "cc_iterm_mcp.admin_state",
-      "cc_iterm_mcp.clock",
-      "cc_iterm_mcp.errors",
-      "cc_iterm_mcp.ledger"
+      "goals_iterm_mcp.admin_state",
+      "goals_iterm_mcp.clock",
+      "goals_iterm_mcp.errors",
+      "goals_iterm_mcp.ledger"
     ],
     "test_actor_slot_admin.py": [
-      "cc_iterm_mcp.admin_schema",
-      "cc_iterm_mcp.admin_server",
-      "cc_iterm_mcp.errors"
+      "goals_iterm_mcp.admin_schema",
+      "goals_iterm_mcp.admin_server",
+      "goals_iterm_mcp.errors"
     ],
     "test_actor_slot_catalog.py": [
-      "cc_iterm_mcp.actor_slots",
-      "cc_iterm_mcp.security"
+      "goals_iterm_mcp.actor_slots",
+      "goals_iterm_mcp.security"
     ],
     "test_actor_slot_integration.py": [
-      "cc_iterm_mcp.actor_slots",
-      "cc_iterm_mcp.admin_state",
-      "cc_iterm_mcp.errors",
-      "cc_iterm_mcp.ledger",
+      "goals_iterm_mcp.actor_slots",
+      "goals_iterm_mcp.admin_state",
+      "goals_iterm_mcp.errors",
+      "goals_iterm_mcp.ledger",
       "tests"
     ],
     "test_actor_slots.py": [
-      "cc_iterm_mcp.actor_slots",
-      "cc_iterm_mcp.security"
+      "goals_iterm_mcp.actor_slots",
+      "goals_iterm_mcp.security"
     ],
     "test_adapter_registry.py": [
-      "cc_iterm_mcp.adapter_registry"
+      "goals_iterm_mcp.adapter_registry"
     ],
     "test_adapter_routing.py": [
-      "cc_iterm_mcp.adapter_selection",
-      "cc_iterm_mcp.adapters",
-      "cc_iterm_mcp.backends",
-      "cc_iterm_mcp.core",
-      "cc_iterm_mcp.ledger",
-      "cc_iterm_mcp.managed_runtime"
+      "goals_iterm_mcp.adapter_selection",
+      "goals_iterm_mcp.adapters",
+      "goals_iterm_mcp.backends",
+      "goals_iterm_mcp.core",
+      "goals_iterm_mcp.ledger",
+      "goals_iterm_mcp.managed_runtime"
     ],
     "test_adapter_selection.py": [
-      "cc_iterm_mcp.adapter_registry",
-      "cc_iterm_mcp.adapters",
-      "cc_iterm_mcp.backend_types",
-      "cc_iterm_mcp.errors"
+      "goals_iterm_mcp.adapter_registry",
+      "goals_iterm_mcp.adapters",
+      "goals_iterm_mcp.backend_types",
+      "goals_iterm_mcp.errors"
     ],
     "test_admin_contract.py": [],
     "test_admin_credential_rotation.py": [
-      "cc_iterm_mcp.admin_state",
-      "cc_iterm_mcp.clock",
-      "cc_iterm_mcp.errors",
-      "cc_iterm_mcp.ledger"
+      "goals_iterm_mcp.admin_state",
+      "goals_iterm_mcp.clock",
+      "goals_iterm_mcp.errors",
+      "goals_iterm_mcp.ledger"
     ],
     "test_admin_launch.py": [
-      "cc_iterm_mcp.admin_schema",
-      "cc_iterm_mcp.transport"
+      "goals_iterm_mcp.admin_schema",
+      "goals_iterm_mcp.transport"
     ],
     "test_admin_rotation_wire.py": [
-      "cc_iterm_mcp.admin_schema",
-      "cc_iterm_mcp.errors"
+      "goals_iterm_mcp.admin_schema",
+      "goals_iterm_mcp.errors"
     ],
     "test_admin_server.py": [
-      "cc_iterm_mcp.admin_server",
-      "cc_iterm_mcp.admin_state",
-      "cc_iterm_mcp.credentials",
-      "cc_iterm_mcp.errors",
-      "cc_iterm_mcp.ledger",
-      "cc_iterm_mcp.transport"
+      "goals_iterm_mcp.admin_server",
+      "goals_iterm_mcp.admin_state",
+      "goals_iterm_mcp.credentials",
+      "goals_iterm_mcp.errors",
+      "goals_iterm_mcp.ledger",
+      "goals_iterm_mcp.transport"
     ],
     "test_admin_session_transport.py": [
-      "cc_iterm_mcp.admin_schema",
-      "cc_iterm_mcp.admin_server",
-      "cc_iterm_mcp.admin_state",
-      "cc_iterm_mcp.ledger",
-      "cc_iterm_mcp.transport",
+      "goals_iterm_mcp.admin_schema",
+      "goals_iterm_mcp.admin_server",
+      "goals_iterm_mcp.admin_state",
+      "goals_iterm_mcp.ledger",
+      "goals_iterm_mcp.transport",
       "tests.test_admin_server"
     ],
     "test_admin_signing_rotation.py": [
-      "cc_iterm_mcp.admin_state",
-      "cc_iterm_mcp.clock",
-      "cc_iterm_mcp.errors",
-      "cc_iterm_mcp.ledger"
+      "goals_iterm_mcp.admin_state",
+      "goals_iterm_mcp.clock",
+      "goals_iterm_mcp.errors",
+      "goals_iterm_mcp.ledger"
     ],
     "test_admin_state.py": [
-      "cc_iterm_mcp.admin_state",
-      "cc_iterm_mcp.clock",
-      "cc_iterm_mcp.errors",
-      "cc_iterm_mcp.ledger"
+      "goals_iterm_mcp.admin_state",
+      "goals_iterm_mcp.clock",
+      "goals_iterm_mcp.errors",
+      "goals_iterm_mcp.ledger"
     ],
     "test_admin_state_retirement.py": [
-      "cc_iterm_mcp.admin_schema",
-      "cc_iterm_mcp.admin_server",
-      "cc_iterm_mcp.admin_state",
-      "cc_iterm_mcp.errors",
-      "cc_iterm_mcp.ledger"
+      "goals_iterm_mcp.admin_schema",
+      "goals_iterm_mcp.admin_server",
+      "goals_iterm_mcp.admin_state",
+      "goals_iterm_mcp.errors",
+      "goals_iterm_mcp.ledger"
     ],
     "test_admin_stop_lifecycle.py": [
-      "cc_iterm_mcp.admin_state",
-      "cc_iterm_mcp.clock",
-      "cc_iterm_mcp.errors",
-      "cc_iterm_mcp.ledger"
+      "goals_iterm_mcp.admin_state",
+      "goals_iterm_mcp.clock",
+      "goals_iterm_mcp.errors",
+      "goals_iterm_mcp.ledger"
     ],
     "test_admin_targets.py": [
-      "cc_iterm_mcp.admin_schema",
-      "cc_iterm_mcp.admin_state",
-      "cc_iterm_mcp.admin_targets",
-      "cc_iterm_mcp.backends",
-      "cc_iterm_mcp.clock",
-      "cc_iterm_mcp.core",
-      "cc_iterm_mcp.errors",
-      "cc_iterm_mcp.ledger",
-      "cc_iterm_mcp.security"
+      "goals_iterm_mcp.admin_schema",
+      "goals_iterm_mcp.admin_state",
+      "goals_iterm_mcp.admin_targets",
+      "goals_iterm_mcp.backends",
+      "goals_iterm_mcp.clock",
+      "goals_iterm_mcp.core",
+      "goals_iterm_mcp.errors",
+      "goals_iterm_mcp.ledger",
+      "goals_iterm_mcp.security"
     ],
     "test_admin_wire_schema.py": [
-      "cc_iterm_mcp.admin_schema"
+      "goals_iterm_mcp.admin_schema"
     ],
     "test_arbitration.py": [
-      "cc_iterm_mcp.arbitration",
-      "cc_iterm_mcp.clock",
-      "cc_iterm_mcp.errors",
-      "cc_iterm_mcp.security"
+      "goals_iterm_mcp.arbitration",
+      "goals_iterm_mcp.clock",
+      "goals_iterm_mcp.errors",
+      "goals_iterm_mcp.security"
     ],
     "test_backend_foreground_context.py": [
-      "cc_iterm_mcp.backends",
-      "cc_iterm_mcp.errors",
-      "cc_iterm_mcp.foreground"
+      "goals_iterm_mcp.backends",
+      "goals_iterm_mcp.errors",
+      "goals_iterm_mcp.foreground"
     ],
     "test_backend_lifecycle.py": [
-      "cc_iterm_mcp.backends",
-      "cc_iterm_mcp.errors"
+      "goals_iterm_mcp.backends",
+      "goals_iterm_mcp.errors"
     ],
     "test_backends.py": [
-      "cc_iterm_mcp.adapters",
-      "cc_iterm_mcp.backends",
-      "cc_iterm_mcp.errors"
+      "goals_iterm_mcp.adapters",
+      "goals_iterm_mcp.backends",
+      "goals_iterm_mcp.errors"
     ],
     "test_bounded_stop_launch.py": [
-      "cc_iterm_mcp.admin_schema",
-      "cc_iterm_mcp.credentials",
-      "cc_iterm_mcp.ledger",
-      "cc_iterm_mcp.transport"
+      "goals_iterm_mcp.admin_schema",
+      "goals_iterm_mcp.credentials",
+      "goals_iterm_mcp.ledger",
+      "goals_iterm_mcp.transport"
     ],
     "test_bounded_stop_settlement.py": [
-      "cc_iterm_mcp.backends",
-      "cc_iterm_mcp.core",
-      "cc_iterm_mcp.errors",
-      "cc_iterm_mcp.ledger"
+      "goals_iterm_mcp.backends",
+      "goals_iterm_mcp.core",
+      "goals_iterm_mcp.errors",
+      "goals_iterm_mcp.ledger"
     ],
     "test_bounded_transport_close.py": [
-      "cc_iterm_mcp.admin_server",
-      "cc_iterm_mcp.backends",
-      "cc_iterm_mcp.broker",
-      "cc_iterm_mcp.shutdown"
+      "goals_iterm_mcp.admin_server",
+      "goals_iterm_mcp.backends",
+      "goals_iterm_mcp.broker",
+      "goals_iterm_mcp.shutdown"
     ],
     "test_broker.py": [
-      "cc_iterm_mcp.backends",
-      "cc_iterm_mcp.broker",
-      "cc_iterm_mcp.core",
-      "cc_iterm_mcp.gateway",
-      "cc_iterm_mcp.ledger",
-      "cc_iterm_mcp.transport"
+      "goals_iterm_mcp.backends",
+      "goals_iterm_mcp.broker",
+      "goals_iterm_mcp.core",
+      "goals_iterm_mcp.gateway",
+      "goals_iterm_mcp.ledger",
+      "goals_iterm_mcp.transport"
     ],
     "test_claude_ascii_probe.py": [
-      "cc_iterm_mcp.backend_types",
-      "cc_iterm_mcp.terminal_cells",
-      "cc_iterm_mcp.wire_cells"
+      "goals_iterm_mcp.backend_types",
+      "goals_iterm_mcp.terminal_cells",
+      "goals_iterm_mcp.wire_cells"
     ],
     "test_claude_capture.py": [
-      "cc_iterm_mcp.adapters",
-      "cc_iterm_mcp.backend_types",
-      "cc_iterm_mcp.claude_screen",
-      "cc_iterm_mcp.errors",
-      "cc_iterm_mcp.terminal_cells",
-      "cc_iterm_mcp.wire_cells"
+      "goals_iterm_mcp.adapters",
+      "goals_iterm_mcp.backend_types",
+      "goals_iterm_mcp.claude_screen",
+      "goals_iterm_mcp.errors",
+      "goals_iterm_mcp.terminal_cells",
+      "goals_iterm_mcp.wire_cells"
     ],
     "test_claude_draft_bridge.py": [],
     "test_claude_live_probe.py": [],
     "test_claude_rendered_spans.py": [
-      "cc_iterm_mcp.adapters",
-      "cc_iterm_mcp.backend_types",
-      "cc_iterm_mcp.claude_screen",
-      "cc_iterm_mcp.errors",
-      "cc_iterm_mcp.terminal_cells",
-      "cc_iterm_mcp.wire_cells"
+      "goals_iterm_mcp.adapters",
+      "goals_iterm_mcp.backend_types",
+      "goals_iterm_mcp.claude_screen",
+      "goals_iterm_mcp.errors",
+      "goals_iterm_mcp.terminal_cells",
+      "goals_iterm_mcp.wire_cells"
     ],
     "test_claude_screen.py": [
-      "cc_iterm_mcp.claude_screen"
+      "goals_iterm_mcp.claude_screen"
     ],
     "test_codex_ascii_probe.py": [
-      "cc_iterm_mcp.backend_types",
-      "cc_iterm_mcp.terminal_cells",
-      "cc_iterm_mcp.wire_cells"
+      "goals_iterm_mcp.backend_types",
+      "goals_iterm_mcp.terminal_cells",
+      "goals_iterm_mcp.wire_cells"
     ],
     "test_codex_multiline_probe.py": [
-      "cc_iterm_mcp.backend_types",
-      "cc_iterm_mcp.terminal_cells",
-      "cc_iterm_mcp.wire_cells"
+      "goals_iterm_mcp.backend_types",
+      "goals_iterm_mcp.terminal_cells",
+      "goals_iterm_mcp.wire_cells"
     ],
     "test_codex_screen.py": [
-      "cc_iterm_mcp.backend_types",
-      "cc_iterm_mcp.codex_screen",
-      "cc_iterm_mcp.terminal_cells"
+      "goals_iterm_mcp.backend_types",
+      "goals_iterm_mcp.codex_screen",
+      "goals_iterm_mcp.terminal_cells"
     ],
     "test_configured_binding_runtime.py": [
-      "cc_iterm_mcp.adapter_registry",
-      "cc_iterm_mcp.admin_schema",
-      "cc_iterm_mcp.admin_server",
-      "cc_iterm_mcp.admin_state",
-      "cc_iterm_mcp.admin_targets",
-      "cc_iterm_mcp.backends",
-      "cc_iterm_mcp.broker",
-      "cc_iterm_mcp.clock",
-      "cc_iterm_mcp.context_sampling",
-      "cc_iterm_mcp.core",
-      "cc_iterm_mcp.credentials",
-      "cc_iterm_mcp.foreground",
-      "cc_iterm_mcp.gateway",
-      "cc_iterm_mcp.ledger",
-      "cc_iterm_mcp.managed_runtime",
-      "cc_iterm_mcp.policy",
-      "cc_iterm_mcp.reviewed_context",
-      "cc_iterm_mcp.reviewed_context_store",
-      "cc_iterm_mcp.schema",
-      "cc_iterm_mcp.security",
-      "cc_iterm_mcp.transport"
+      "goals_iterm_mcp.adapter_registry",
+      "goals_iterm_mcp.admin_schema",
+      "goals_iterm_mcp.admin_server",
+      "goals_iterm_mcp.admin_state",
+      "goals_iterm_mcp.admin_targets",
+      "goals_iterm_mcp.backends",
+      "goals_iterm_mcp.broker",
+      "goals_iterm_mcp.clock",
+      "goals_iterm_mcp.context_sampling",
+      "goals_iterm_mcp.core",
+      "goals_iterm_mcp.credentials",
+      "goals_iterm_mcp.foreground",
+      "goals_iterm_mcp.gateway",
+      "goals_iterm_mcp.ledger",
+      "goals_iterm_mcp.managed_runtime",
+      "goals_iterm_mcp.policy",
+      "goals_iterm_mcp.reviewed_context",
+      "goals_iterm_mcp.reviewed_context_store",
+      "goals_iterm_mcp.schema",
+      "goals_iterm_mcp.security",
+      "goals_iterm_mcp.transport"
     ],
     "test_configured_binding_schema.py": [],
     "test_configured_binding_state.py": [
-      "cc_iterm_mcp.admin_state",
-      "cc_iterm_mcp.clock",
-      "cc_iterm_mcp.errors",
-      "cc_iterm_mcp.ledger",
-      "cc_iterm_mcp.reviewed_context",
-      "cc_iterm_mcp.security"
+      "goals_iterm_mcp.admin_state",
+      "goals_iterm_mcp.clock",
+      "goals_iterm_mcp.errors",
+      "goals_iterm_mcp.ledger",
+      "goals_iterm_mcp.reviewed_context",
+      "goals_iterm_mcp.security"
     ],
     "test_context_sampling.py": [
-      "cc_iterm_mcp.context_sampling",
-      "cc_iterm_mcp.errors",
-      "cc_iterm_mcp.foreground"
+      "goals_iterm_mcp.context_sampling",
+      "goals_iterm_mcp.errors",
+      "goals_iterm_mcp.foreground"
     ],
     "test_context_source_publications.py": [
-      "cc_iterm_mcp.context_source_publications",
-      "cc_iterm_mcp.errors",
-      "cc_iterm_mcp.reviewed_context",
-      "cc_iterm_mcp.security"
+      "goals_iterm_mcp.context_source_publications",
+      "goals_iterm_mcp.errors",
+      "goals_iterm_mcp.reviewed_context",
+      "goals_iterm_mcp.security"
     ],
     "test_context_source_reads.py": [
-      "cc_iterm_mcp.context_source_reads",
-      "cc_iterm_mcp.errors",
-      "cc_iterm_mcp.reviewed_context",
-      "cc_iterm_mcp.reviewed_context_store"
+      "goals_iterm_mcp.context_source_reads",
+      "goals_iterm_mcp.errors",
+      "goals_iterm_mcp.reviewed_context",
+      "goals_iterm_mcp.reviewed_context_store"
     ],
     "test_contract_runtime.py": [
-      "cc_iterm_mcp.errors",
-      "cc_iterm_mcp.schema",
-      "cc_iterm_mcp.security"
+      "goals_iterm_mcp.errors",
+      "goals_iterm_mcp.schema",
+      "goals_iterm_mcp.security"
     ],
     "test_core.py": [
-      "cc_iterm_mcp.backends",
-      "cc_iterm_mcp.clock",
-      "cc_iterm_mcp.core",
-      "cc_iterm_mcp.ledger"
+      "goals_iterm_mcp.backends",
+      "goals_iterm_mcp.clock",
+      "goals_iterm_mcp.core",
+      "goals_iterm_mcp.ledger"
     ],
     "test_core_idle_maintenance.py": [
-      "cc_iterm_mcp.backends",
-      "cc_iterm_mcp.clock",
-      "cc_iterm_mcp.core",
-      "cc_iterm_mcp.errors",
-      "cc_iterm_mcp.ledger",
-      "cc_iterm_mcp.managed_runtime",
-      "cc_iterm_mcp.observation"
+      "goals_iterm_mcp.backends",
+      "goals_iterm_mcp.clock",
+      "goals_iterm_mcp.core",
+      "goals_iterm_mcp.errors",
+      "goals_iterm_mcp.ledger",
+      "goals_iterm_mcp.managed_runtime",
+      "goals_iterm_mcp.observation"
     ],
     "test_core_lifecycle.py": [
-      "cc_iterm_mcp.admin_schema",
-      "cc_iterm_mcp.admin_state",
-      "cc_iterm_mcp.admin_targets",
-      "cc_iterm_mcp.arbitration",
-      "cc_iterm_mcp.backends",
-      "cc_iterm_mcp.clock",
-      "cc_iterm_mcp.core",
-      "cc_iterm_mcp.errors",
-      "cc_iterm_mcp.ledger",
-      "cc_iterm_mcp.security"
+      "goals_iterm_mcp.admin_schema",
+      "goals_iterm_mcp.admin_state",
+      "goals_iterm_mcp.admin_targets",
+      "goals_iterm_mcp.arbitration",
+      "goals_iterm_mcp.backends",
+      "goals_iterm_mcp.clock",
+      "goals_iterm_mcp.core",
+      "goals_iterm_mcp.errors",
+      "goals_iterm_mcp.ledger",
+      "goals_iterm_mcp.security"
     ],
     "test_core_quarantine_recovery.py": [
-      "cc_iterm_mcp.backends",
-      "cc_iterm_mcp.core",
-      "cc_iterm_mcp.ledger"
+      "goals_iterm_mcp.backends",
+      "goals_iterm_mcp.core",
+      "goals_iterm_mcp.ledger"
     ],
     "test_core_retirement.py": [
-      "cc_iterm_mcp.backends",
-      "cc_iterm_mcp.core",
-      "cc_iterm_mcp.errors",
-      "cc_iterm_mcp.ledger"
+      "goals_iterm_mcp.backends",
+      "goals_iterm_mcp.core",
+      "goals_iterm_mcp.errors",
+      "goals_iterm_mcp.ledger"
     ],
     "test_credential_contract_upgrade.py": [
-      "cc_iterm_mcp.credentials",
-      "cc_iterm_mcp.errors",
-      "cc_iterm_mcp.security"
+      "goals_iterm_mcp.credentials",
+      "goals_iterm_mcp.errors",
+      "goals_iterm_mcp.security"
     ],
     "test_credential_rotation.py": [
-      "cc_iterm_mcp.credential_rotation",
-      "cc_iterm_mcp.security"
+      "goals_iterm_mcp.credential_rotation",
+      "goals_iterm_mcp.security"
     ],
     "test_credentials.py": [
-      "cc_iterm_mcp.credentials",
-      "cc_iterm_mcp.errors",
-      "cc_iterm_mcp.security"
+      "goals_iterm_mcp.credentials",
+      "goals_iterm_mcp.errors",
+      "goals_iterm_mcp.security"
     ],
     "test_direct.py": [
-      "cc_iterm_mcp.backend_types",
-      "cc_iterm_mcp.direct"
+      "goals_iterm_mcp.backend_types",
+      "goals_iterm_mcp.direct"
     ],
     "test_elicitation_smoke.py": [],
     "test_foreground.py": [
-      "cc_iterm_mcp"
+      "goals_iterm_mcp"
     ],
     "test_foreground_context_integration.py": [
-      "cc_iterm_mcp.admin_schema",
-      "cc_iterm_mcp.admin_state",
-      "cc_iterm_mcp.backend_types",
-      "cc_iterm_mcp.backends",
-      "cc_iterm_mcp.clock",
-      "cc_iterm_mcp.context_sampling",
-      "cc_iterm_mcp.core",
-      "cc_iterm_mcp.errors",
-      "cc_iterm_mcp.foreground",
-      "cc_iterm_mcp.ledger",
-      "cc_iterm_mcp.managed_runtime",
-      "cc_iterm_mcp.scheduling",
-      "cc_iterm_mcp.schema"
+      "goals_iterm_mcp.admin_schema",
+      "goals_iterm_mcp.admin_state",
+      "goals_iterm_mcp.backend_types",
+      "goals_iterm_mcp.backends",
+      "goals_iterm_mcp.clock",
+      "goals_iterm_mcp.context_sampling",
+      "goals_iterm_mcp.core",
+      "goals_iterm_mcp.errors",
+      "goals_iterm_mcp.foreground",
+      "goals_iterm_mcp.ledger",
+      "goals_iterm_mcp.managed_runtime",
+      "goals_iterm_mcp.scheduling",
+      "goals_iterm_mcp.schema"
     ],
     "test_gateway.py": [
-      "cc_iterm_mcp"
+      "goals_iterm_mcp"
     ],
     "test_gateway_slot.py": [
-      "cc_iterm_mcp.actor_slots",
-      "cc_iterm_mcp.gateway_slot",
-      "cc_iterm_mcp.security"
+      "goals_iterm_mcp.actor_slots",
+      "goals_iterm_mcp.gateway_slot",
+      "goals_iterm_mcp.security"
     ],
     "test_gateway_slot_launch.py": [
-      "cc_iterm_mcp.__main__",
-      "cc_iterm_mcp.actor_slots"
+      "goals_iterm_mcp.__main__",
+      "goals_iterm_mcp.actor_slots"
     ],
     "test_gateway_slot_resume.py": [
-      "cc_iterm_mcp"
+      "goals_iterm_mcp"
     ],
     "test_gateway_slot_stdio.py": [
-      "cc_iterm_mcp.actor_slots",
+      "goals_iterm_mcp.actor_slots",
       "tests"
     ],
     "test_handoff_preview.py": [
-      "cc_iterm_mcp.admin_schema",
-      "cc_iterm_mcp.admin_state"
+      "goals_iterm_mcp.admin_schema",
+      "goals_iterm_mcp.admin_state"
     ],
     "test_history_initial_reclamation.py": [
-      "cc_iterm_mcp.clock",
-      "cc_iterm_mcp.errors",
-      "cc_iterm_mcp.observation",
-      "cc_iterm_mcp.security"
+      "goals_iterm_mcp.clock",
+      "goals_iterm_mcp.errors",
+      "goals_iterm_mcp.observation",
+      "goals_iterm_mcp.security"
     ],
     "test_history_transactions.py": [
-      "cc_iterm_mcp.backends",
-      "cc_iterm_mcp.errors",
-      "cc_iterm_mcp.transaction_reads"
+      "goals_iterm_mcp.backends",
+      "goals_iterm_mcp.errors",
+      "goals_iterm_mcp.transaction_reads"
     ],
     "test_iterm_history.py": [
-      "cc_iterm_mcp.backend_types",
-      "cc_iterm_mcp.backends",
-      "cc_iterm_mcp.clock",
-      "cc_iterm_mcp.errors",
-      "cc_iterm_mcp.observation",
-      "cc_iterm_mcp.security"
+      "goals_iterm_mcp.backend_types",
+      "goals_iterm_mcp.backends",
+      "goals_iterm_mcp.clock",
+      "goals_iterm_mcp.errors",
+      "goals_iterm_mcp.observation",
+      "goals_iterm_mcp.security"
     ],
     "test_key_activation_capability.py": [
-      "cc_iterm_mcp.errors",
-      "cc_iterm_mcp.ledger"
+      "goals_iterm_mcp.errors",
+      "goals_iterm_mcp.ledger"
     ],
     "test_key_rotation_admission.py": [
-      "cc_iterm_mcp.errors",
-      "cc_iterm_mcp.ledger"
+      "goals_iterm_mcp.errors",
+      "goals_iterm_mcp.ledger"
     ],
     "test_keyring.py": [
-      "cc_iterm_mcp.errors",
-      "cc_iterm_mcp.keyring"
+      "goals_iterm_mcp.errors",
+      "goals_iterm_mcp.keyring"
     ],
     "test_keyring_faults.py": [
-      "cc_iterm_mcp.clock",
-      "cc_iterm_mcp.errors",
-      "cc_iterm_mcp.keyring",
-      "cc_iterm_mcp.ledger"
+      "goals_iterm_mcp.clock",
+      "goals_iterm_mcp.errors",
+      "goals_iterm_mcp.keyring",
+      "goals_iterm_mcp.ledger"
     ],
     "test_late_result_recovery.py": [
-      "cc_iterm_mcp.backends",
-      "cc_iterm_mcp.core",
-      "cc_iterm_mcp.errors",
-      "cc_iterm_mcp.ledger"
+      "goals_iterm_mcp.backends",
+      "goals_iterm_mcp.core",
+      "goals_iterm_mcp.errors",
+      "goals_iterm_mcp.ledger"
     ],
     "test_ledger.py": [
-      "cc_iterm_mcp.clock",
-      "cc_iterm_mcp.errors",
-      "cc_iterm_mcp.ledger"
+      "goals_iterm_mcp.clock",
+      "goals_iterm_mcp.errors",
+      "goals_iterm_mcp.ledger"
     ],
     "test_ledger_clock_reopen.py": [],
     "test_ledger_metadata_cas.py": [
-      "cc_iterm_mcp.clock",
-      "cc_iterm_mcp.errors",
-      "cc_iterm_mcp.ledger"
+      "goals_iterm_mcp.clock",
+      "goals_iterm_mcp.errors",
+      "goals_iterm_mcp.ledger"
     ],
     "test_ledger_process_exit.py": [
-      "cc_iterm_mcp.ledger"
+      "goals_iterm_mcp.ledger"
     ],
     "test_ledger_rotation.py": [
-      "cc_iterm_mcp.clock",
-      "cc_iterm_mcp.errors",
-      "cc_iterm_mcp.ledger",
-      "cc_iterm_mcp.security"
+      "goals_iterm_mcp.clock",
+      "goals_iterm_mcp.errors",
+      "goals_iterm_mcp.ledger",
+      "goals_iterm_mcp.security"
     ],
     "test_lifecycle_concurrency.py": [
-      "cc_iterm_mcp.backends",
-      "cc_iterm_mcp.clock",
-      "cc_iterm_mcp.core",
-      "cc_iterm_mcp.ledger"
+      "goals_iterm_mcp.backends",
+      "goals_iterm_mcp.clock",
+      "goals_iterm_mcp.core",
+      "goals_iterm_mcp.ledger"
     ],
     "test_managed_broker.py": [
-      "cc_iterm_mcp.backends",
-      "cc_iterm_mcp.broker",
-      "cc_iterm_mcp.core",
-      "cc_iterm_mcp.gateway",
-      "cc_iterm_mcp.ledger",
-      "cc_iterm_mcp.transport"
+      "goals_iterm_mcp.backends",
+      "goals_iterm_mcp.broker",
+      "goals_iterm_mcp.core",
+      "goals_iterm_mcp.gateway",
+      "goals_iterm_mcp.ledger",
+      "goals_iterm_mcp.transport"
     ],
     "test_managed_quarantine_review.py": [
-      "cc_iterm_mcp.admin_schema",
-      "cc_iterm_mcp.admin_state",
-      "cc_iterm_mcp.backends",
-      "cc_iterm_mcp.clock",
-      "cc_iterm_mcp.core",
-      "cc_iterm_mcp.errors",
-      "cc_iterm_mcp.ledger",
-      "cc_iterm_mcp.managed_runtime"
+      "goals_iterm_mcp.admin_schema",
+      "goals_iterm_mcp.admin_state",
+      "goals_iterm_mcp.backends",
+      "goals_iterm_mcp.clock",
+      "goals_iterm_mcp.core",
+      "goals_iterm_mcp.errors",
+      "goals_iterm_mcp.ledger",
+      "goals_iterm_mcp.managed_runtime"
     ],
     "test_managed_rotation.py": [
-      "cc_iterm_mcp.admin_schema",
-      "cc_iterm_mcp.admin_state",
-      "cc_iterm_mcp.backends",
-      "cc_iterm_mcp.core",
-      "cc_iterm_mcp.credential_rotation",
-      "cc_iterm_mcp.credentials",
-      "cc_iterm_mcp.errors",
-      "cc_iterm_mcp.ledger",
-      "cc_iterm_mcp.managed_runtime",
-      "cc_iterm_mcp.security"
+      "goals_iterm_mcp.admin_schema",
+      "goals_iterm_mcp.admin_state",
+      "goals_iterm_mcp.backends",
+      "goals_iterm_mcp.core",
+      "goals_iterm_mcp.credential_rotation",
+      "goals_iterm_mcp.credentials",
+      "goals_iterm_mcp.errors",
+      "goals_iterm_mcp.ledger",
+      "goals_iterm_mcp.managed_runtime",
+      "goals_iterm_mcp.security"
     ],
     "test_managed_runtime.py": [
-      "cc_iterm_mcp.admin_schema",
-      "cc_iterm_mcp.admin_server",
-      "cc_iterm_mcp.admin_state",
-      "cc_iterm_mcp.admin_targets",
-      "cc_iterm_mcp.backends",
-      "cc_iterm_mcp.broker",
-      "cc_iterm_mcp.core",
-      "cc_iterm_mcp.credentials",
-      "cc_iterm_mcp.errors",
-      "cc_iterm_mcp.gateway",
-      "cc_iterm_mcp.ledger",
-      "cc_iterm_mcp.managed_runtime",
-      "cc_iterm_mcp.transport"
+      "goals_iterm_mcp.admin_schema",
+      "goals_iterm_mcp.admin_server",
+      "goals_iterm_mcp.admin_state",
+      "goals_iterm_mcp.admin_targets",
+      "goals_iterm_mcp.backends",
+      "goals_iterm_mcp.broker",
+      "goals_iterm_mcp.core",
+      "goals_iterm_mcp.credentials",
+      "goals_iterm_mcp.errors",
+      "goals_iterm_mcp.gateway",
+      "goals_iterm_mcp.ledger",
+      "goals_iterm_mcp.managed_runtime",
+      "goals_iterm_mcp.transport"
     ],
     "test_managed_state.py": [
-      "cc_iterm_mcp.admin_state",
-      "cc_iterm_mcp.clock",
-      "cc_iterm_mcp.errors",
-      "cc_iterm_mcp.ledger"
+      "goals_iterm_mcp.admin_state",
+      "goals_iterm_mcp.clock",
+      "goals_iterm_mcp.errors",
+      "goals_iterm_mcp.ledger"
     ],
     "test_managed_stdio.py": [
-      "cc_iterm_mcp.admin_schema",
-      "cc_iterm_mcp.credentials",
-      "cc_iterm_mcp.transport"
+      "goals_iterm_mcp.admin_schema",
+      "goals_iterm_mcp.credentials",
+      "goals_iterm_mcp.transport"
     ],
     "test_managed_stop_launch.py": [
-      "cc_iterm_mcp.admin_schema",
-      "cc_iterm_mcp.credentials",
-      "cc_iterm_mcp.transport"
+      "goals_iterm_mcp.admin_schema",
+      "goals_iterm_mcp.credentials",
+      "goals_iterm_mcp.transport"
     ],
     "test_management_retirement.py": [
-      "cc_iterm_mcp.admin_schema",
-      "cc_iterm_mcp.admin_state",
-      "cc_iterm_mcp.backends",
-      "cc_iterm_mcp.core",
-      "cc_iterm_mcp.credentials",
-      "cc_iterm_mcp.errors",
-      "cc_iterm_mcp.ledger",
-      "cc_iterm_mcp.managed_runtime"
+      "goals_iterm_mcp.admin_schema",
+      "goals_iterm_mcp.admin_state",
+      "goals_iterm_mcp.backends",
+      "goals_iterm_mcp.core",
+      "goals_iterm_mcp.credentials",
+      "goals_iterm_mcp.errors",
+      "goals_iterm_mcp.ledger",
+      "goals_iterm_mcp.managed_runtime"
     ],
     "test_memory_quarantine_barrier.py": [
-      "cc_iterm_mcp.backends",
-      "cc_iterm_mcp.core",
-      "cc_iterm_mcp.errors",
-      "cc_iterm_mcp.ledger"
+      "goals_iterm_mcp.backends",
+      "goals_iterm_mcp.core",
+      "goals_iterm_mcp.errors",
+      "goals_iterm_mcp.ledger"
     ],
     "test_menu_faults.py": [
-      "cc_iterm_mcp.errors"
+      "goals_iterm_mcp.errors"
     ],
     "test_menu_render_wait.py": [
-      "cc_iterm_mcp.errors"
+      "goals_iterm_mcp.errors"
     ],
     "test_observation.py": [
-      "cc_iterm_mcp.backend_types",
-      "cc_iterm_mcp.clock",
-      "cc_iterm_mcp.errors",
-      "cc_iterm_mcp.observation",
-      "cc_iterm_mcp.schema",
-      "cc_iterm_mcp.security",
-      "cc_iterm_mcp.terminal_cells"
+      "goals_iterm_mcp.backend_types",
+      "goals_iterm_mcp.clock",
+      "goals_iterm_mcp.errors",
+      "goals_iterm_mcp.observation",
+      "goals_iterm_mcp.schema",
+      "goals_iterm_mcp.security",
+      "goals_iterm_mcp.terminal_cells"
     ],
     "test_observation_idle.py": [
-      "cc_iterm_mcp.clock",
-      "cc_iterm_mcp.errors",
-      "cc_iterm_mcp.observation",
-      "cc_iterm_mcp.security"
+      "goals_iterm_mcp.clock",
+      "goals_iterm_mcp.errors",
+      "goals_iterm_mcp.observation",
+      "goals_iterm_mcp.security"
     ],
     "test_observation_lifecycle.py": [
-      "cc_iterm_mcp.backend_types",
-      "cc_iterm_mcp.clock",
-      "cc_iterm_mcp.errors",
-      "cc_iterm_mcp.observation",
-      "cc_iterm_mcp.security"
+      "goals_iterm_mcp.backend_types",
+      "goals_iterm_mcp.clock",
+      "goals_iterm_mcp.errors",
+      "goals_iterm_mcp.observation",
+      "goals_iterm_mcp.security"
     ],
     "test_observer_budget.py": [
-      "cc_iterm_mcp.backends",
-      "cc_iterm_mcp.core",
-      "cc_iterm_mcp.ledger"
+      "goals_iterm_mcp.backends",
+      "goals_iterm_mcp.core",
+      "goals_iterm_mcp.ledger"
     ],
     "test_policy.py": [
-      "cc_iterm_mcp.clock",
-      "cc_iterm_mcp.errors",
-      "cc_iterm_mcp.policy",
-      "cc_iterm_mcp.security"
+      "goals_iterm_mcp.clock",
+      "goals_iterm_mcp.errors",
+      "goals_iterm_mcp.policy",
+      "goals_iterm_mcp.security"
     ],
     "test_profile_credentials.py": [
-      "cc_iterm_mcp.credentials",
-      "cc_iterm_mcp.errors",
-      "cc_iterm_mcp.security"
+      "goals_iterm_mcp.credentials",
+      "goals_iterm_mcp.errors",
+      "goals_iterm_mcp.security"
     ],
     "test_quarantine_admin_atomic.py": [
-      "cc_iterm_mcp.admin_state",
-      "cc_iterm_mcp.clock",
-      "cc_iterm_mcp.errors",
-      "cc_iterm_mcp.ledger"
+      "goals_iterm_mcp.admin_state",
+      "goals_iterm_mcp.clock",
+      "goals_iterm_mcp.errors",
+      "goals_iterm_mcp.ledger"
     ],
     "test_quarantine_completion_proof.py": [
-      "cc_iterm_mcp.backends",
-      "cc_iterm_mcp.clock",
-      "cc_iterm_mcp.core",
-      "cc_iterm_mcp.errors",
-      "cc_iterm_mcp.ledger"
+      "goals_iterm_mcp.backends",
+      "goals_iterm_mcp.clock",
+      "goals_iterm_mcp.core",
+      "goals_iterm_mcp.errors",
+      "goals_iterm_mcp.ledger"
     ],
     "test_quarantine_evidence_producer.py": [
-      "cc_iterm_mcp.admin_schema",
-      "cc_iterm_mcp.admin_state",
-      "cc_iterm_mcp.backends",
-      "cc_iterm_mcp.core",
-      "cc_iterm_mcp.errors",
-      "cc_iterm_mcp.ledger",
-      "cc_iterm_mcp.managed_runtime"
+      "goals_iterm_mcp.admin_schema",
+      "goals_iterm_mcp.admin_state",
+      "goals_iterm_mcp.backends",
+      "goals_iterm_mcp.core",
+      "goals_iterm_mcp.errors",
+      "goals_iterm_mcp.ledger",
+      "goals_iterm_mcp.managed_runtime"
     ],
     "test_quarantine_prepare_protocol.py": [
-      "cc_iterm_mcp.admin_schema",
-      "cc_iterm_mcp.admin_server",
-      "cc_iterm_mcp.admin_state",
-      "cc_iterm_mcp.backends",
-      "cc_iterm_mcp.clock",
-      "cc_iterm_mcp.core",
-      "cc_iterm_mcp.errors",
-      "cc_iterm_mcp.ledger",
-      "cc_iterm_mcp.managed_runtime",
-      "cc_iterm_mcp.transport"
+      "goals_iterm_mcp.admin_schema",
+      "goals_iterm_mcp.admin_server",
+      "goals_iterm_mcp.admin_state",
+      "goals_iterm_mcp.backends",
+      "goals_iterm_mcp.clock",
+      "goals_iterm_mcp.core",
+      "goals_iterm_mcp.errors",
+      "goals_iterm_mcp.ledger",
+      "goals_iterm_mcp.managed_runtime",
+      "goals_iterm_mcp.transport"
     ],
     "test_quarantine_projection.py": [
-      "cc_iterm_mcp.admin_state",
-      "cc_iterm_mcp.clock",
-      "cc_iterm_mcp.errors",
-      "cc_iterm_mcp.ledger"
+      "goals_iterm_mcp.admin_state",
+      "goals_iterm_mcp.clock",
+      "goals_iterm_mcp.errors",
+      "goals_iterm_mcp.ledger"
     ],
     "test_quarantine_resolution.py": [
-      "cc_iterm_mcp.clock",
-      "cc_iterm_mcp.errors",
-      "cc_iterm_mcp.ledger"
+      "goals_iterm_mcp.clock",
+      "goals_iterm_mcp.errors",
+      "goals_iterm_mcp.ledger"
     ],
     "test_quarantine_sync.py": [
-      "cc_iterm_mcp.admin_schema",
-      "cc_iterm_mcp.admin_state",
-      "cc_iterm_mcp.backends",
-      "cc_iterm_mcp.clock",
-      "cc_iterm_mcp.core",
-      "cc_iterm_mcp.errors",
-      "cc_iterm_mcp.ledger",
-      "cc_iterm_mcp.managed_runtime"
+      "goals_iterm_mcp.admin_schema",
+      "goals_iterm_mcp.admin_state",
+      "goals_iterm_mcp.backends",
+      "goals_iterm_mcp.clock",
+      "goals_iterm_mcp.core",
+      "goals_iterm_mcp.errors",
+      "goals_iterm_mcp.ledger",
+      "goals_iterm_mcp.managed_runtime"
     ],
     "test_read_binding.py": [
-      "cc_iterm_mcp.admin_state",
-      "cc_iterm_mcp.clock",
-      "cc_iterm_mcp.errors",
-      "cc_iterm_mcp.ledger"
+      "goals_iterm_mcp.admin_state",
+      "goals_iterm_mcp.clock",
+      "goals_iterm_mcp.errors",
+      "goals_iterm_mcp.ledger"
     ],
     "test_reviewed_bind_runtime.py": [
-      "cc_iterm_mcp.adapter_registry",
-      "cc_iterm_mcp.admin_schema",
-      "cc_iterm_mcp.admin_server",
-      "cc_iterm_mcp.admin_state",
-      "cc_iterm_mcp.admin_targets",
-      "cc_iterm_mcp.backends",
-      "cc_iterm_mcp.broker",
-      "cc_iterm_mcp.clock",
-      "cc_iterm_mcp.context_sampling",
-      "cc_iterm_mcp.core",
-      "cc_iterm_mcp.credentials",
-      "cc_iterm_mcp.errors",
-      "cc_iterm_mcp.foreground",
-      "cc_iterm_mcp.gateway",
-      "cc_iterm_mcp.ledger",
-      "cc_iterm_mcp.managed_runtime",
-      "cc_iterm_mcp.policy",
-      "cc_iterm_mcp.reviewed_context",
-      "cc_iterm_mcp.reviewed_context_store",
-      "cc_iterm_mcp.schema",
-      "cc_iterm_mcp.security",
-      "cc_iterm_mcp.transport"
+      "goals_iterm_mcp.adapter_registry",
+      "goals_iterm_mcp.admin_schema",
+      "goals_iterm_mcp.admin_server",
+      "goals_iterm_mcp.admin_state",
+      "goals_iterm_mcp.admin_targets",
+      "goals_iterm_mcp.backends",
+      "goals_iterm_mcp.broker",
+      "goals_iterm_mcp.clock",
+      "goals_iterm_mcp.context_sampling",
+      "goals_iterm_mcp.core",
+      "goals_iterm_mcp.credentials",
+      "goals_iterm_mcp.errors",
+      "goals_iterm_mcp.foreground",
+      "goals_iterm_mcp.gateway",
+      "goals_iterm_mcp.ledger",
+      "goals_iterm_mcp.managed_runtime",
+      "goals_iterm_mcp.policy",
+      "goals_iterm_mcp.reviewed_context",
+      "goals_iterm_mcp.reviewed_context_store",
+      "goals_iterm_mcp.schema",
+      "goals_iterm_mcp.security",
+      "goals_iterm_mcp.transport"
     ],
     "test_reviewed_bind_schema.py": [],
     "test_reviewed_bind_state.py": [
-      "cc_iterm_mcp.admin_state",
-      "cc_iterm_mcp.clock",
-      "cc_iterm_mcp.errors",
-      "cc_iterm_mcp.ledger",
-      "cc_iterm_mcp.reviewed_context",
-      "cc_iterm_mcp.security"
+      "goals_iterm_mcp.admin_state",
+      "goals_iterm_mcp.clock",
+      "goals_iterm_mcp.errors",
+      "goals_iterm_mcp.ledger",
+      "goals_iterm_mcp.reviewed_context",
+      "goals_iterm_mcp.security"
     ],
     "test_reviewed_context.py": [
-      "cc_iterm_mcp.adapter_registry",
-      "cc_iterm_mcp.context_sampling",
-      "cc_iterm_mcp.errors",
-      "cc_iterm_mcp.foreground",
-      "cc_iterm_mcp.reviewed_context",
-      "cc_iterm_mcp.security"
+      "goals_iterm_mcp.adapter_registry",
+      "goals_iterm_mcp.context_sampling",
+      "goals_iterm_mcp.errors",
+      "goals_iterm_mcp.foreground",
+      "goals_iterm_mcp.reviewed_context",
+      "goals_iterm_mcp.security"
     ],
     "test_reviewed_context_integration.py": [
-      "cc_iterm_mcp.adapter_registry",
-      "cc_iterm_mcp.admin_schema",
-      "cc_iterm_mcp.admin_state",
-      "cc_iterm_mcp.clock",
-      "cc_iterm_mcp.context_sampling",
-      "cc_iterm_mcp.core",
-      "cc_iterm_mcp.errors",
-      "cc_iterm_mcp.foreground",
-      "cc_iterm_mcp.ledger",
-      "cc_iterm_mcp.managed_runtime",
-      "cc_iterm_mcp.policy",
-      "cc_iterm_mcp.reviewed_context",
-      "cc_iterm_mcp.reviewed_context_store"
+      "goals_iterm_mcp.adapter_registry",
+      "goals_iterm_mcp.admin_schema",
+      "goals_iterm_mcp.admin_state",
+      "goals_iterm_mcp.clock",
+      "goals_iterm_mcp.context_sampling",
+      "goals_iterm_mcp.core",
+      "goals_iterm_mcp.errors",
+      "goals_iterm_mcp.foreground",
+      "goals_iterm_mcp.ledger",
+      "goals_iterm_mcp.managed_runtime",
+      "goals_iterm_mcp.policy",
+      "goals_iterm_mcp.reviewed_context",
+      "goals_iterm_mcp.reviewed_context_store"
     ],
     "test_reviewed_context_store.py": [
-      "cc_iterm_mcp.reviewed_context",
-      "cc_iterm_mcp.reviewed_context_store",
-      "cc_iterm_mcp.security"
+      "goals_iterm_mcp.reviewed_context",
+      "goals_iterm_mcp.reviewed_context_store",
+      "goals_iterm_mcp.security"
     ],
     "test_rotation_admin_integration.py": [
-      "cc_iterm_mcp.admin_schema",
-      "cc_iterm_mcp.admin_server",
-      "cc_iterm_mcp.admin_state",
-      "cc_iterm_mcp.backends",
-      "cc_iterm_mcp.broker",
-      "cc_iterm_mcp.core",
-      "cc_iterm_mcp.credential_rotation",
-      "cc_iterm_mcp.credentials",
-      "cc_iterm_mcp.errors",
-      "cc_iterm_mcp.gateway",
-      "cc_iterm_mcp.ledger",
-      "cc_iterm_mcp.managed_runtime",
-      "cc_iterm_mcp.transport"
+      "goals_iterm_mcp.admin_schema",
+      "goals_iterm_mcp.admin_server",
+      "goals_iterm_mcp.admin_state",
+      "goals_iterm_mcp.backends",
+      "goals_iterm_mcp.broker",
+      "goals_iterm_mcp.core",
+      "goals_iterm_mcp.credential_rotation",
+      "goals_iterm_mcp.credentials",
+      "goals_iterm_mcp.errors",
+      "goals_iterm_mcp.gateway",
+      "goals_iterm_mcp.ledger",
+      "goals_iterm_mcp.managed_runtime",
+      "goals_iterm_mcp.transport"
     ],
     "test_runtime_admin_session_fence.py": [
-      "cc_iterm_mcp.admin_schema",
-      "cc_iterm_mcp.admin_state",
-      "cc_iterm_mcp.backends",
-      "cc_iterm_mcp.core",
-      "cc_iterm_mcp.credentials",
-      "cc_iterm_mcp.errors",
-      "cc_iterm_mcp.ledger",
-      "cc_iterm_mcp.managed_runtime"
+      "goals_iterm_mcp.admin_schema",
+      "goals_iterm_mcp.admin_state",
+      "goals_iterm_mcp.backends",
+      "goals_iterm_mcp.core",
+      "goals_iterm_mcp.credentials",
+      "goals_iterm_mcp.errors",
+      "goals_iterm_mcp.ledger",
+      "goals_iterm_mcp.managed_runtime"
     ],
     "test_scheduling.py": [
-      "cc_iterm_mcp.backends",
-      "cc_iterm_mcp.core",
-      "cc_iterm_mcp.errors",
-      "cc_iterm_mcp.ledger",
-      "cc_iterm_mcp.scheduling",
-      "cc_iterm_mcp.schema"
+      "goals_iterm_mcp.backends",
+      "goals_iterm_mcp.core",
+      "goals_iterm_mcp.errors",
+      "goals_iterm_mcp.ledger",
+      "goals_iterm_mcp.scheduling",
+      "goals_iterm_mcp.schema"
     ],
     "test_send_completion_tracking.py": [
-      "cc_iterm_mcp.backends",
-      "cc_iterm_mcp.core",
-      "cc_iterm_mcp.errors",
-      "cc_iterm_mcp.ledger"
+      "goals_iterm_mcp.backends",
+      "goals_iterm_mcp.core",
+      "goals_iterm_mcp.errors",
+      "goals_iterm_mcp.ledger"
     ],
     "test_shutdown_delivery_ownership.py": [
-      "cc_iterm_mcp.backends",
-      "cc_iterm_mcp.core",
-      "cc_iterm_mcp.errors",
-      "cc_iterm_mcp.ledger"
+      "goals_iterm_mcp.backends",
+      "goals_iterm_mcp.core",
+      "goals_iterm_mcp.errors",
+      "goals_iterm_mcp.ledger"
     ],
     "test_signing_rotation_consumers.py": [
-      "cc_iterm_mcp.arbitration",
-      "cc_iterm_mcp.backends",
-      "cc_iterm_mcp.clock",
-      "cc_iterm_mcp.context_sampling",
-      "cc_iterm_mcp.core",
-      "cc_iterm_mcp.errors",
-      "cc_iterm_mcp.foreground",
-      "cc_iterm_mcp.ledger",
-      "cc_iterm_mcp.observation",
-      "cc_iterm_mcp.policy",
-      "cc_iterm_mcp.reviewed_context"
+      "goals_iterm_mcp.arbitration",
+      "goals_iterm_mcp.backends",
+      "goals_iterm_mcp.clock",
+      "goals_iterm_mcp.context_sampling",
+      "goals_iterm_mcp.core",
+      "goals_iterm_mcp.errors",
+      "goals_iterm_mcp.foreground",
+      "goals_iterm_mcp.ledger",
+      "goals_iterm_mcp.observation",
+      "goals_iterm_mcp.policy",
+      "goals_iterm_mcp.reviewed_context"
     ],
     "test_slot_provision_runtime.py": [
-      "cc_iterm_mcp.actor_slots",
-      "cc_iterm_mcp.admin_schema",
-      "cc_iterm_mcp.admin_state",
-      "cc_iterm_mcp.backends",
-      "cc_iterm_mcp.core",
-      "cc_iterm_mcp.credentials",
-      "cc_iterm_mcp.errors",
-      "cc_iterm_mcp.ledger",
-      "cc_iterm_mcp.managed_runtime",
-      "cc_iterm_mcp.security"
+      "goals_iterm_mcp.actor_slots",
+      "goals_iterm_mcp.admin_schema",
+      "goals_iterm_mcp.admin_state",
+      "goals_iterm_mcp.backends",
+      "goals_iterm_mcp.core",
+      "goals_iterm_mcp.credentials",
+      "goals_iterm_mcp.errors",
+      "goals_iterm_mcp.ledger",
+      "goals_iterm_mcp.managed_runtime",
+      "goals_iterm_mcp.security"
     ],
     "test_slot_provision_state.py": [
-      "cc_iterm_mcp.admin_state",
-      "cc_iterm_mcp.clock",
-      "cc_iterm_mcp.errors",
-      "cc_iterm_mcp.ledger",
-      "cc_iterm_mcp.security"
+      "goals_iterm_mcp.admin_state",
+      "goals_iterm_mcp.clock",
+      "goals_iterm_mcp.errors",
+      "goals_iterm_mcp.ledger",
+      "goals_iterm_mcp.security"
     ],
     "test_slot_provision_wire.py": [
-      "cc_iterm_mcp.admin_schema",
-      "cc_iterm_mcp.admin_server",
-      "cc_iterm_mcp.errors",
-      "cc_iterm_mcp.security"
+      "goals_iterm_mcp.admin_schema",
+      "goals_iterm_mcp.admin_server",
+      "goals_iterm_mcp.errors",
+      "goals_iterm_mcp.security"
     ],
     "test_slot_provisioning.py": [
-      "cc_iterm_mcp.actor_slots",
-      "cc_iterm_mcp.gateway_slot",
-      "cc_iterm_mcp.security",
-      "cc_iterm_mcp.slot_provisioning"
+      "goals_iterm_mcp.actor_slots",
+      "goals_iterm_mcp.gateway_slot",
+      "goals_iterm_mcp.security",
+      "goals_iterm_mcp.slot_provisioning"
     ],
     "test_snapshot_pagination.py": [
-      "cc_iterm_mcp.admin_state",
-      "cc_iterm_mcp.clock",
-      "cc_iterm_mcp.errors",
-      "cc_iterm_mcp.ledger",
-      "cc_iterm_mcp.security"
+      "goals_iterm_mcp.admin_state",
+      "goals_iterm_mcp.clock",
+      "goals_iterm_mcp.errors",
+      "goals_iterm_mcp.ledger",
+      "goals_iterm_mcp.security"
     ],
     "test_stdio.py": [],
     "test_stop_coordinator.py": [
-      "cc_iterm_mcp.backends",
-      "cc_iterm_mcp.core",
-      "cc_iterm_mcp.errors",
-      "cc_iterm_mcp.ledger",
-      "cc_iterm_mcp.managed_runtime"
+      "goals_iterm_mcp.backends",
+      "goals_iterm_mcp.core",
+      "goals_iterm_mcp.errors",
+      "goals_iterm_mcp.ledger",
+      "goals_iterm_mcp.managed_runtime"
     ],
     "test_terminal_cells.py": [
-      "cc_iterm_mcp.terminal_cells"
+      "goals_iterm_mcp.terminal_cells"
     ],
     "test_transaction_reads.py": [
-      "cc_iterm_mcp.errors",
-      "cc_iterm_mcp.transaction_reads"
+      "goals_iterm_mcp.errors",
+      "goals_iterm_mcp.transaction_reads"
     ],
     "test_transport.py": [
-      "cc_iterm_mcp.transport"
+      "goals_iterm_mcp.transport"
     ],
     "test_wire_cells.py": [
-      "cc_iterm_mcp.terminal_cells",
-      "cc_iterm_mcp.wire_cells"
+      "goals_iterm_mcp.terminal_cells",
+      "goals_iterm_mcp.wire_cells"
     ],
     "test_write_context_gates.py": [
-      "cc_iterm_mcp.backends",
-      "cc_iterm_mcp.clock",
-      "cc_iterm_mcp.core",
-      "cc_iterm_mcp.errors",
-      "cc_iterm_mcp.ledger"
+      "goals_iterm_mcp.backends",
+      "goals_iterm_mcp.clock",
+      "goals_iterm_mcp.core",
+      "goals_iterm_mcp.errors",
+      "goals_iterm_mcp.ledger"
     ],
     "test_writer.py": [
-      "cc_iterm_mcp.backends",
-      "cc_iterm_mcp.clock",
-      "cc_iterm_mcp.core",
-      "cc_iterm_mcp.errors",
-      "cc_iterm_mcp.ledger"
+      "goals_iterm_mcp.backends",
+      "goals_iterm_mcp.clock",
+      "goals_iterm_mcp.core",
+      "goals_iterm_mcp.errors",
+      "goals_iterm_mcp.ledger"
     ]
   },
   "scripts_imports_before": {
     "build_admin_app.py": [],
     "elicitation_smoke_server.py": [],
     "prepare_iterm_test.py": [
-      "cc_iterm_mcp.transport"
+      "goals_iterm_mcp.transport"
     ],
     "probe_claude_ascii_editor.py": [
-      "cc_iterm_mcp.backends",
-      "cc_iterm_mcp.claude_screen",
-      "cc_iterm_mcp.errors",
-      "cc_iterm_mcp.transport",
-      "cc_iterm_mcp.wire_cells"
+      "goals_iterm_mcp.backends",
+      "goals_iterm_mcp.claude_screen",
+      "goals_iterm_mcp.errors",
+      "goals_iterm_mcp.transport",
+      "goals_iterm_mcp.wire_cells"
     ],
     "probe_claude_cells.py": [
-      "cc_iterm_mcp.adapters",
-      "cc_iterm_mcp.backend_types",
-      "cc_iterm_mcp.backends",
-      "cc_iterm_mcp.claude_screen",
-      "cc_iterm_mcp.terminal_cells",
-      "cc_iterm_mcp.transport",
-      "cc_iterm_mcp.wire_cells"
+      "goals_iterm_mcp.adapters",
+      "goals_iterm_mcp.backend_types",
+      "goals_iterm_mcp.backends",
+      "goals_iterm_mcp.claude_screen",
+      "goals_iterm_mcp.terminal_cells",
+      "goals_iterm_mcp.transport",
+      "goals_iterm_mcp.wire_cells"
     ],
     "probe_claude_mcp_menu.py": [
-      "cc_iterm_mcp.transport"
+      "goals_iterm_mcp.transport"
     ],
     "probe_claude_paste_and_clear.py": [
-      "cc_iterm_mcp.transport"
+      "goals_iterm_mcp.transport"
     ],
     "probe_claude_unicode_draft.py": [
-      "cc_iterm_mcp.terminal_cells",
-      "cc_iterm_mcp.transport"
+      "goals_iterm_mcp.terminal_cells",
+      "goals_iterm_mcp.transport"
     ],
     "probe_codex_ascii_editor.py": [
-      "cc_iterm_mcp.backends",
-      "cc_iterm_mcp.errors",
-      "cc_iterm_mcp.transport",
-      "cc_iterm_mcp.wire_cells"
+      "goals_iterm_mcp.backends",
+      "goals_iterm_mcp.errors",
+      "goals_iterm_mcp.transport",
+      "goals_iterm_mcp.wire_cells"
     ],
     "probe_codex_multiline_editor.py": [
-      "cc_iterm_mcp.backends",
-      "cc_iterm_mcp.errors",
-      "cc_iterm_mcp.transport",
-      "cc_iterm_mcp.wire_cells"
+      "goals_iterm_mcp.backends",
+      "goals_iterm_mcp.errors",
+      "goals_iterm_mcp.transport",
+      "goals_iterm_mcp.wire_cells"
     ],
     "probe_foreground_metadata.py": [
-      "cc_iterm_mcp"
+      "goals_iterm_mcp"
     ],
     "probe_iterm_foreground_context.py": [
-      "cc_iterm_mcp",
-      "cc_iterm_mcp.backends",
-      "cc_iterm_mcp.context_sampling",
-      "cc_iterm_mcp.core",
-      "cc_iterm_mcp.errors",
-      "cc_iterm_mcp.foreground",
-      "cc_iterm_mcp.ledger",
-      "cc_iterm_mcp.scheduling"
+      "goals_iterm_mcp",
+      "goals_iterm_mcp.backends",
+      "goals_iterm_mcp.context_sampling",
+      "goals_iterm_mcp.core",
+      "goals_iterm_mcp.errors",
+      "goals_iterm_mcp.foreground",
+      "goals_iterm_mcp.ledger",
+      "goals_iterm_mcp.scheduling"
     ],
     "probe_iterm_read.py": [
-      "cc_iterm_mcp.backends",
-      "cc_iterm_mcp.errors",
-      "cc_iterm_mcp.observation",
-      "cc_iterm_mcp.schema",
-      "cc_iterm_mcp.transport"
+      "goals_iterm_mcp.backends",
+      "goals_iterm_mcp.errors",
+      "goals_iterm_mcp.observation",
+      "goals_iterm_mcp.schema",
+      "goals_iterm_mcp.transport"
     ],
     "probe_managed_iterm_read.py": [
-      "cc_iterm_mcp.admin_schema",
-      "cc_iterm_mcp.credentials",
-      "cc_iterm_mcp.schema",
-      "cc_iterm_mcp.transport"
+      "goals_iterm_mcp.admin_schema",
+      "goals_iterm_mcp.credentials",
+      "goals_iterm_mcp.schema",
+      "goals_iterm_mcp.transport"
     ],
     "sync_schemas.py": []
   },
@@ -1508,43 +1508,43 @@
     "test_transaction_reads.py"
   ],
   "deleted_repo_paths": [
-    "src/cc_iterm_mcp/actor_restore_runtime.py",
-    "src/cc_iterm_mcp/actor_slots.py",
-    "src/cc_iterm_mcp/adapter_registry.py",
-    "src/cc_iterm_mcp/adapter_selection.py",
-    "src/cc_iterm_mcp/adapters.py",
-    "src/cc_iterm_mcp/admin_schema.py",
-    "src/cc_iterm_mcp/admin_server.py",
-    "src/cc_iterm_mcp/admin_state.py",
-    "src/cc_iterm_mcp/admin_targets.py",
-    "src/cc_iterm_mcp/arbitration.py",
-    "src/cc_iterm_mcp/broker.py",
-    "src/cc_iterm_mcp/claude_screen.py",
-    "src/cc_iterm_mcp/clock.py",
-    "src/cc_iterm_mcp/codex_screen.py",
-    "src/cc_iterm_mcp/context_sampling.py",
-    "src/cc_iterm_mcp/context_source_publications.py",
-    "src/cc_iterm_mcp/context_source_reads.py",
-    "src/cc_iterm_mcp/core.py",
-    "src/cc_iterm_mcp/credential_rotation.py",
-    "src/cc_iterm_mcp/credentials.py",
-    "src/cc_iterm_mcp/foreground.py",
-    "src/cc_iterm_mcp/gateway.py",
-    "src/cc_iterm_mcp/gateway_slot.py",
-    "src/cc_iterm_mcp/keyring.py",
-    "src/cc_iterm_mcp/ledger.py",
-    "src/cc_iterm_mcp/managed_runtime.py",
-    "src/cc_iterm_mcp/observation.py",
-    "src/cc_iterm_mcp/policy.py",
-    "src/cc_iterm_mcp/reviewed_context.py",
-    "src/cc_iterm_mcp/reviewed_context_store.py",
-    "src/cc_iterm_mcp/scheduling.py",
-    "src/cc_iterm_mcp/schema.py",
-    "src/cc_iterm_mcp/security.py",
-    "src/cc_iterm_mcp/slot_provisioning.py",
-    "src/cc_iterm_mcp/terminal_cells.py",
-    "src/cc_iterm_mcp/transport.py",
-    "src/cc_iterm_mcp/wire_cells.py",
+    "src/goals_iterm_mcp/actor_restore_runtime.py",
+    "src/goals_iterm_mcp/actor_slots.py",
+    "src/goals_iterm_mcp/adapter_registry.py",
+    "src/goals_iterm_mcp/adapter_selection.py",
+    "src/goals_iterm_mcp/adapters.py",
+    "src/goals_iterm_mcp/admin_schema.py",
+    "src/goals_iterm_mcp/admin_server.py",
+    "src/goals_iterm_mcp/admin_state.py",
+    "src/goals_iterm_mcp/admin_targets.py",
+    "src/goals_iterm_mcp/arbitration.py",
+    "src/goals_iterm_mcp/broker.py",
+    "src/goals_iterm_mcp/claude_screen.py",
+    "src/goals_iterm_mcp/clock.py",
+    "src/goals_iterm_mcp/codex_screen.py",
+    "src/goals_iterm_mcp/context_sampling.py",
+    "src/goals_iterm_mcp/context_source_publications.py",
+    "src/goals_iterm_mcp/context_source_reads.py",
+    "src/goals_iterm_mcp/core.py",
+    "src/goals_iterm_mcp/credential_rotation.py",
+    "src/goals_iterm_mcp/credentials.py",
+    "src/goals_iterm_mcp/foreground.py",
+    "src/goals_iterm_mcp/gateway.py",
+    "src/goals_iterm_mcp/gateway_slot.py",
+    "src/goals_iterm_mcp/keyring.py",
+    "src/goals_iterm_mcp/ledger.py",
+    "src/goals_iterm_mcp/managed_runtime.py",
+    "src/goals_iterm_mcp/observation.py",
+    "src/goals_iterm_mcp/policy.py",
+    "src/goals_iterm_mcp/reviewed_context.py",
+    "src/goals_iterm_mcp/reviewed_context_store.py",
+    "src/goals_iterm_mcp/scheduling.py",
+    "src/goals_iterm_mcp/schema.py",
+    "src/goals_iterm_mcp/security.py",
+    "src/goals_iterm_mcp/slot_provisioning.py",
+    "src/goals_iterm_mcp/terminal_cells.py",
+    "src/goals_iterm_mcp/transport.py",
+    "src/goals_iterm_mcp/wire_cells.py",
     "tests/test_slot_provision_runtime.py",
     "tests/test_contract_runtime.py",
     "tests/test_lifecycle_concurrency.py",
@@ -1672,7 +1672,7 @@
     "tests/test_codex_screen.py",
     "electron",
     "experiments",
-    "src/cc_iterm_mcp/schemas",
+    "src/goals_iterm_mcp/schemas",
     "build",
     "newtests",
     ".local/admin-app",
@@ -1730,9 +1730,9 @@
     "docs/cli-probe-findings.md",
     "docs/backend-scheduling.md",
     "docs/admin-runtime-contract.md",
-    "src/cc_iterm_mcp/__pycache__",
+    "src/goals_iterm_mcp/__pycache__",
     "tests/__pycache__",
-    "src/cc_iterm_mcp.egg-info",
+    "src/goals_iterm_mcp.egg-info",
     ".pytest_cache",
     ".ruff_cache"
   ],

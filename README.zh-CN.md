@@ -49,7 +49,7 @@ goals-iterm-mcp 通过 **iTerm2 Python API**，把支持 MCP 的 Agent 与电脑
 uvx --python 3.12 goals-iterm-mcp@0.1.1 serve
 ```
 
-Python 导入路径仍为 `cc_iterm_mcp`，原命令 `cc-iterm-mcp` 作为兼容别名保留。
+Python 导入路径为 `goals_iterm_mcp`，启动命令为 `goals-iterm-mcp`。
 
 ## 通过 Agent 对话安装
 
@@ -87,7 +87,7 @@ Python 导入路径仍为 `cc_iterm_mcp`，原命令 `cc-iterm-mcp` 作为兼容
 python3.12 -m venv .venv
 .venv/bin/python -m pip install --require-hashes -r requirements.lock
 .venv/bin/python -m pip install --no-build-isolation --no-deps -e .
-.venv/bin/python -m cc_iterm_mcp serve
+.venv/bin/python -m goals_iterm_mcp serve
 ```
 
 `serve` 等待 MCP 客户端通过 stdin/stdout 发送协议消息，不是交互式命令行。进程诊断写入 stderr。没有 Python `--reload`。
@@ -99,7 +99,7 @@ MCP 客户端配置示例（替换为你的绝对路径）：
   "mcpServers": {
     "iterm": {
       "command": "/absolute/path/to/goals-iterm-mcp/.venv/bin/python",
-      "args": ["-m", "cc_iterm_mcp", "serve"]
+      "args": ["-m", "goals_iterm_mcp", "serve"]
     }
   }
 }

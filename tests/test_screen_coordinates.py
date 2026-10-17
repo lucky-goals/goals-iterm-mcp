@@ -1,7 +1,7 @@
 """Screen cursor projection, independent of cell parsing."""
 
 import unittest
-from cc_iterm_mcp.screen_coordinates import screen_cursor_coord
+from goals_iterm_mcp.screen_coordinates import screen_cursor_coord
 
 
 class ScreenCoordinateTests(unittest.TestCase):

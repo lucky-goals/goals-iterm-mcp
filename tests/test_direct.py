@@ -8,8 +8,8 @@ from mcp import ClientSession, StdioServerParameters
 from mcp.client.stdio import stdio_client
 from mcp.server.fastmcp.exceptions import ToolError
 
-from cc_iterm_mcp.backend_types import CaptureDTO, CaptureLineDTO
-from cc_iterm_mcp.direct import ItermTools, build_server
+from goals_iterm_mcp.backend_types import CaptureDTO, CaptureLineDTO
+from goals_iterm_mcp.direct import ItermTools, build_server
 
 
 def backend():
@@ -136,7 +136,7 @@ class DirectTests(unittest.IsolatedAsyncioTestCase):
     async def test_real_stdio_handshake_and_sdk_stdout_isolation(self):
         code = '''
 from tests.test_direct import backend
-from cc_iterm_mcp.direct import ItermTools, build_server
+from goals_iterm_mcp.direct import ItermTools, build_server
 fake = backend()
 async def connect():
     print("SDK diagnostic must not enter protocol stdout")

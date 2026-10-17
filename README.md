@@ -49,7 +49,7 @@ Version 0.1.1 is available on [PyPI](https://pypi.org/project/goals-iterm-mcp/).
 uvx --python 3.12 goals-iterm-mcp@0.1.1 serve
 ```
 
-The Python import path remains `cc_iterm_mcp`. The previous `cc-iterm-mcp` command is retained as a compatibility alias.
+The Python import path is `goals_iterm_mcp`, and the command is `goals-iterm-mcp`.
 
 ## Install through an agent conversation
 
@@ -93,7 +93,7 @@ From the repository directory:
 python3.12 -m venv .venv
 .venv/bin/python -m pip install --require-hashes -r requirements.lock
 .venv/bin/python -m pip install --no-build-isolation --no-deps -e .
-.venv/bin/python -m cc_iterm_mcp serve
+.venv/bin/python -m goals_iterm_mcp serve
 ```
 
 `serve` waits for MCP protocol messages on stdin/stdout; it is not an interactive shell. Diagnostics go to stderr. Run it without Python auto-reload.
@@ -105,7 +105,7 @@ Example MCP client configuration (replace the command with your absolute path):
   "mcpServers": {
     "iterm": {
       "command": "/absolute/path/to/goals-iterm-mcp/.venv/bin/python",
-      "args": ["-m", "cc_iterm_mcp", "serve"]
+      "args": ["-m", "goals_iterm_mcp", "serve"]
     }
   }
 }

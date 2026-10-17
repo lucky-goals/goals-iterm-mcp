@@ -11,8 +11,8 @@ import asyncio
 import time
 import unittest
 
-from cc_iterm_mcp.backends import ItermBackend
-from cc_iterm_mcp.shutdown import wait_bounded
+from goals_iterm_mcp.backends import ItermBackend
+from goals_iterm_mcp.shutdown import wait_bounded
 
 
 async def _stubborn(gate: asyncio.Event) -> None:

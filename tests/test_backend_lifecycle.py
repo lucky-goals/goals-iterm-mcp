@@ -7,8 +7,8 @@ from types import SimpleNamespace
 import unittest
 from unittest.mock import patch
 
-from cc_iterm_mcp.backends import ItermBackend
-from cc_iterm_mcp.errors import DomainError
+from goals_iterm_mcp.backends import ItermBackend
+from goals_iterm_mcp.errors import DomainError
 
 
 class _Session:
@@ -175,7 +175,7 @@ class BackendLifecycleTests(unittest.IsolatedAsyncioTestCase):
 
         # One window, one tab, and one splitter already consume the tiny
         # patched budget; walking its leaf must fail before any epoch commit.
-        with patch("cc_iterm_mcp.backends.MAX_TOPOLOGY_NODES", 3):
+        with patch("goals_iterm_mcp.backends.MAX_TOPOLOGY_NODES", 3):
             with self.assertRaises(DomainError) as error:
                 await backend.list_sessions()
         self.assertEqual(error.exception.code, "RESOURCE_LIMIT")
@@ -207,7 +207,7 @@ class BackendLifecycleTests(unittest.IsolatedAsyncioTestCase):
             _Window("window-wide", SimpleNamespace(tab_id="tab-wide", root=outer)),
         ]
 
-        with patch("cc_iterm_mcp.backends.MAX_TOPOLOGY_NODES", 8):
+        with patch("goals_iterm_mcp.backends.MAX_TOPOLOGY_NODES", 8):
             with self.assertRaises(DomainError) as error:
                 await backend.list_sessions()
         self.assertEqual(error.exception.code, "RESOURCE_LIMIT")

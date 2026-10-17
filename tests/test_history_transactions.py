@@ -6,9 +6,9 @@ import asyncio
 from types import SimpleNamespace
 import unittest
 
-from cc_iterm_mcp.backends import ItermBackend
-from cc_iterm_mcp.errors import DomainError
-from cc_iterm_mcp.transaction_reads import TransactionReadSupervisor
+from goals_iterm_mcp.backends import ItermBackend
+from goals_iterm_mcp.errors import DomainError
+from goals_iterm_mcp.transaction_reads import TransactionReadSupervisor
 
 
 class _Transport:

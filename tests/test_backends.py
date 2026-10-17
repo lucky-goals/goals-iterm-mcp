@@ -4,8 +4,8 @@ from __future__ import annotations
 
 import unittest
 
-from cc_iterm_mcp.backends import ItermBackend
-from cc_iterm_mcp.errors import DomainError
+from goals_iterm_mcp.backends import ItermBackend
+from goals_iterm_mcp.errors import DomainError
 
 
 class BackendTests(unittest.IsolatedAsyncioTestCase):

@@ -20,8 +20,7 @@ Repository = "https://github.com/lucky-goals/goals-iterm-mcp"
 Issues = "https://github.com/lucky-goals/goals-iterm-mcp/issues"
 
 [project.scripts]
-goals-iterm-mcp = "cc_iterm_mcp.__main__:main"
-cc-iterm-mcp = "cc_iterm_mcp.__main__:main"
+goals-iterm-mcp = "goals_iterm_mcp.__main__:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]

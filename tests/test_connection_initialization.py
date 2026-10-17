@@ -4,8 +4,8 @@ from types import SimpleNamespace
 import unittest
 from unittest.mock import AsyncMock, Mock
 
-from cc_iterm_mcp.backends import ItermBackend
-from cc_iterm_mcp.errors import DomainError
+from goals_iterm_mcp.backends import ItermBackend
+from goals_iterm_mcp.errors import DomainError
 
 
 class InitializationTests(unittest.IsolatedAsyncioTestCase):
