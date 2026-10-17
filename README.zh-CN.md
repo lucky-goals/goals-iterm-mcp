@@ -22,7 +22,20 @@ goals-iterm-mcp 通过 **iTerm2 Python API**，把支持 MCP 的 Agent 与电脑
 
 服务入口为 `serve`，通过 stdio 提供 7 个 MCP 工具，覆盖会话枚举、终端读取、文本与按键发送，以及窗口和标签页创建。
 
-## 先配置好要使用的 Coding CLI
+## 前置配置
+
+### 启用 iTerm2 Python API
+
+需要 macOS，并已安装、运行 iTerm2。本项目已使用 **iTerm2 3.7.6** 完成验证。
+
+1. 打开 **iTerm2 → Settings → General → Magic**。
+2. 启用 **Python API**。
+3. MCP 服务首次连接时，如弹出 iTerm2 API 授权请求，请允许连接。
+4. 使用 MCP 工具期间，保持 iTerm2 运行。
+
+设置详情见 [iTerm2 官方说明](https://iterm2.com/documentation-preferences-general.html)。
+
+### 配置要使用的 Coding CLI
 
 通过 iTerm2 操作某个 Coding Agent 的 CLI 前，请先安装该 CLI，并在 iTerm 环境中完成认证配置：登录对应的 OAuth 账号，或按照该 CLI 支持的方式配置 API Gateway 地址与凭据。先在 iTerm2 中手动启动一次，确认它能正常响应简单的提示词。
 
@@ -68,9 +81,7 @@ Python 导入路径仍为 `cc_iterm_mcp`，原命令 `cc-iterm-mcp` 作为兼容
 
 ## 安装与启动
 
-已使用 **iTerm2 3.7.6** 完成验证。
-
-需要 macOS、运行中的 iTerm2、Python 3.12。在 iTerm2 的 Settings → General → Magic 中启用 Python API；首次连接时允许 iTerm2 的 API 授权请求（[官方设置说明](https://iterm2.com/documentation-preferences-general.html)）。
+先完成上面的[前置配置](#前置配置)。从源码安装需要 Python 3.12。
 
 ```sh
 python3.12 -m venv .venv

@@ -22,7 +22,20 @@ For example, give the supervising agent this goal:
 
 The `serve` command provides seven stdio MCP tools for listing sessions, reading terminal output, sending text and keys, and creating windows and tabs.
 
-## Prepare your coding CLIs
+## Prerequisites
+
+### Enable the iTerm2 Python API
+
+Use macOS with iTerm2 installed and running. This project has been verified with **iTerm2 3.7.6**.
+
+1. Open **iTerm2 → Settings → General → Magic**.
+2. Enable **Python API**.
+3. When the MCP server first connects, approve iTerm2's API authorization request if prompted.
+4. Keep iTerm2 running while using the MCP tools.
+
+See the [official iTerm2 settings documentation](https://iterm2.com/documentation-preferences-general.html).
+
+### Configure your coding CLIs
 
 Before asking an agent to operate a coding CLI through iTerm2, install that CLI and configure its authentication in the iTerm environment: complete its OAuth login, or configure its API Gateway endpoint and credentials as supported by the CLI. Start it manually in iTerm2 and confirm that it can respond to a simple prompt.
 
@@ -72,9 +85,7 @@ Installing this public package does not require a PyPI account or API token. The
 
 ## Installation and startup
 
-Verified with **iTerm2 3.7.6**.
-
-Requires macOS, a running iTerm2 instance, and Python 3.12. Enable the Python API in **iTerm2 Settings → General → Magic**, and allow the API authorization request on first connection. See the [official iTerm2 settings documentation](https://iterm2.com/documentation-preferences-general.html).
+Complete the [prerequisites](#prerequisites) above. Installing from source requires Python 3.12.
 
 From the repository directory:
 
