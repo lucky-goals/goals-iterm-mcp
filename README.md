@@ -48,6 +48,8 @@ Installing this public package does not require a PyPI account or API token. The
 
 ## Installation and startup
 
+Verified with **iTerm2 3.7.6**. Other iTerm2 versions have not been verified for this release.
+
 Requires macOS, a running iTerm2 instance, and Python 3.12. Enable the Python API in **iTerm2 Settings → General → Magic**, and allow the API authorization request on first connection. See the [official iTerm2 settings documentation](https://iterm2.com/documentation-preferences-general.html).
 
 From the repository directory:

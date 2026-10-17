@@ -44,6 +44,8 @@ Python 导入路径仍为 `cc_iterm_mcp`，原命令 `cc-iterm-mcp` 作为兼容
 
 ## 安装与启动
 
+已使用 **iTerm2 3.7.6** 完成验证；此版本发布尚未验证其他 iTerm2 版本。
+
 需要 macOS、运行中的 iTerm2、Python 3.12。在 iTerm2 的 Settings → General → Magic 中启用 Python API；首次连接时允许 iTerm2 的 API 授权请求（[官方设置说明](https://iterm2.com/documentation-preferences-general.html)）。
 
 ```sh
