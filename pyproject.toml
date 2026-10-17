@@ -6,11 +6,16 @@ build-backend = "setuptools.build_meta"
 name = "cc-iterm-mcp"
 version = "0.2.0.dev0"
 description = "MCP tools backed by the iTerm2 Python API"
+readme = "README.md"
 requires-python = ">=3.12,<3.13"
 dependencies = [
   "mcp==1.30.0",
   "iterm2==2.30",
 ]
+
+[project.urls]
+Repository = "https://github.com/lucky-goals/goals-iterm-mcp"
+Issues = "https://github.com/lucky-goals/goals-iterm-mcp/issues"
 
 [project.scripts]
 cc-iterm-mcp = "cc_iterm_mcp.__main__:main"
