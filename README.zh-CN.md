@@ -85,3 +85,7 @@ MCP 客户端配置示例（替换为你的绝对路径）：
 运行模块仅保留 MCP 工具、iTerm 后端、读取结果类型、光标坐标换算、事务与连接清理。旧 broker/gateway、管理 UI、CLI 认证和实验实现已删除。
 
 完整的保留/删除依据见 [依赖梳理和清理记录](docs/cleanup-plan.md)，逐模块清单见 [依赖清单](docs/cleanup-dependencies.json)。
+
+## 许可证
+
+[MIT](LICENSE)，版权归 2026 lucky-goals 所有。

@@ -91,3 +91,7 @@ To reproduce the live smoke test, which operates only on newly created `/bin/cat
 Runtime modules cover MCP tools, the iTerm backend, read-result types, cursor coordinate conversion, transactions, and connection cleanup. The previous broker/gateway, management UI, CLI certification, and experimental implementations have been removed.
 
 See the [dependency and cleanup record (Chinese)](docs/cleanup-plan.md) for the retention/removal rationale and the [dependency inventory](docs/cleanup-dependencies.json) for the module-level audit.
+
+## License
+
+[MIT](LICENSE) © 2026 lucky-goals.
