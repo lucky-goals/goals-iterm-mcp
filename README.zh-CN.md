@@ -2,7 +2,20 @@
 
 [English](README.md) | 简体中文
 
-通过 **iTerm2 Python API** 向 MCP 客户端提供终端工具。直接入口为 `serve`，使用 stdio 通信；不需要 Claude/Codex 插件、源码修改、CLI 适配认证或管理 UI。
+**让 Coding Agent 操作 Mac 上的各种 CLI，在手机上也能推进 vibe coding 任务。**
+
+goals-iterm-mcp 通过 **iTerm2 Python API**，把支持 MCP 的 Agent 与电脑上的终端连接起来。你只需在对话中描述任务，Agent 就可以新开终端窗口、进入项目、启动另一个 Coding CLI、发送任务，再读取进度和结果。多个项目、多个 CLI 会话，都可以通过对话协调，减少手动切换终端的操作。
+
+## 它能帮你做什么
+
+- **在手机上继续推进任务**：通过 Agent 的手机端或远程入口，指挥 Mac 上的 iTerm2 工作，前提是该入口连接的 Agent 能调用本机 MCP。
+- **调度不同 Coding CLI**：让 Agent 启动 Claude Code、Codex CLI 或其他 CLI，进入指定项目并提交开发或诊断任务。
+- **在对话中查看进度**：列出窗口和标签页，读取终端输出，汇总各个会话正在做什么。
+- **让多个项目独立运行**：为任务创建专用窗口或标签页，通过明确的 ID 操作目标会话。
+
+典型使用链路是：**手机或电脑上的对话 → 能访问本机 MCP 的 Agent → iTerm2 → Coding CLI**。Codex、Claude、Cursor、WorkBuddy、Trae、Hermes 等工具，只要所用客户端支持本地 stdio MCP，并具备你所需的手机端或远程连接方式，就可以采用这一模式。目前已通过 Codex 桌面版操作 iTerm2 中的 Claude Code 和 Codex CLI 完成人工验证。
+
+服务入口为 `serve`，通过 stdio 提供 7 个 MCP 工具，覆盖会话枚举、终端读取、文本与按键发送，以及窗口和标签页创建。
 
 ## 使用 uvx 运行
 
@@ -44,7 +57,7 @@ Python 导入路径仍为 `cc_iterm_mcp`，原命令 `cc-iterm-mcp` 作为兼容
 
 ## 安装与启动
 
-已使用 **iTerm2 3.7.6** 完成验证；此版本发布尚未验证其他 iTerm2 版本。
+已使用 **iTerm2 3.7.6** 完成验证。
 
 需要 macOS、运行中的 iTerm2、Python 3.12。在 iTerm2 的 Settings → General → Magic 中启用 Python API；首次连接时允许 iTerm2 的 API 授权请求（[官方设置说明](https://iterm2.com/documentation-preferences-general.html)）。
 

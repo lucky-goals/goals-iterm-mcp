@@ -2,7 +2,20 @@
 
 English | [简体中文](README.zh-CN.md)
 
-Terminal tools for MCP clients, powered by the **iTerm2 Python API**. The `serve` command runs a stdio MCP server for listing sessions, reading terminal output, sending text and keys, and creating windows and tabs.
+**Use your coding agent to drive the CLIs on your Mac—even when you are working from your phone.**
+
+goals-iterm-mcp connects MCP-capable agents to **iTerm2 through its Python API**. Describe a task in conversation, and your agent can open a terminal window, launch another coding CLI in a project, send it instructions, and read back its progress and results. This makes it easier to coordinate vibe coding tasks across multiple projects and CLI sessions without manually switching between terminals.
+
+## What you can do
+
+- **Continue work from your phone:** use an agent's mobile or remote interface to direct work in iTerm2 on your Mac, when that interface connects to an agent running with local MCP access.
+- **Coordinate coding CLIs:** ask your agent to launch Claude Code, Codex CLI, or another CLI, select a project, and submit a development or diagnosis task.
+- **Check progress in conversation:** list windows and tabs, read terminal output, and ask for a summary of what each session is doing.
+- **Keep projects in separate sessions:** create dedicated windows or tabs and target them by explicit IDs.
+
+The intended workflow is **phone or desktop conversation → agent with local MCP access → iTerm2 → coding CLI**. You can use this pattern with tools such as Codex, Claude, Cursor, WorkBuddy, Trae, or Hermes where the chosen client supports local stdio MCP and the remote/mobile connection you use. Our manual validation used Codex desktop to operate Claude Code and Codex CLI in iTerm2.
+
+The `serve` command provides seven stdio MCP tools for listing sessions, reading terminal output, sending text and keys, and creating windows and tabs.
 
 ## Run with uvx
 
@@ -48,7 +61,7 @@ Installing this public package does not require a PyPI account or API token. The
 
 ## Installation and startup
 
-Verified with **iTerm2 3.7.6**. Other iTerm2 versions have not been verified for this release.
+Verified with **iTerm2 3.7.6**.
 
 Requires macOS, a running iTerm2 instance, and Python 3.12. Enable the Python API in **iTerm2 Settings → General → Magic**, and allow the API authorization request on first connection. See the [official iTerm2 settings documentation](https://iterm2.com/documentation-preferences-general.html).
 
