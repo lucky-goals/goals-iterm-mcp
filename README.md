@@ -1,8 +1,18 @@
-# cc-iterm-mcp
+# goals-iterm-mcp
 
 English | [简体中文](README.zh-CN.md)
 
 Terminal tools for MCP clients, powered by the **iTerm2 Python API**. The `serve` command runs a stdio MCP server for listing sessions, reading terminal output, sending text and keys, and creating windows and tabs.
+
+## Run with uvx
+
+Once version 0.1.0 is available on PyPI, run it without cloning this repository:
+
+```sh
+uvx --python 3.12 goals-iterm-mcp@0.1.0 serve
+```
+
+The Python import path remains `cc_iterm_mcp`. The previous `cc-iterm-mcp` command is retained as a compatibility alias.
 
 ## Installation and startup
 
@@ -25,7 +35,7 @@ Example MCP client configuration (replace the command with your absolute path):
 {
   "mcpServers": {
     "iterm": {
-      "command": "/absolute/path/to/cc-iterm-mcp/.venv/bin/python",
+      "command": "/absolute/path/to/goals-iterm-mcp/.venv/bin/python",
       "args": ["-m", "cc_iterm_mcp", "serve"]
     }
   }

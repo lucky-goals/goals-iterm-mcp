@@ -1,8 +1,18 @@
-# cc-iterm-mcp
+# goals-iterm-mcp
 
 [English](README.md) | 简体中文
 
 通过 **iTerm2 Python API** 向 MCP 客户端提供终端工具。直接入口为 `serve`，使用 stdio 通信；不需要 Claude/Codex 插件、源码修改、CLI 适配认证或管理 UI。
+
+## 使用 uvx 运行
+
+0.1.0 发布到 PyPI 后，无需克隆仓库即可运行：
+
+```sh
+uvx --python 3.12 goals-iterm-mcp@0.1.0 serve
+```
+
+Python 导入路径仍为 `cc_iterm_mcp`，原命令 `cc-iterm-mcp` 作为兼容别名保留。
 
 ## 安装与启动
 
@@ -23,7 +33,7 @@ MCP 客户端配置示例（替换为你的绝对路径）：
 {
   "mcpServers": {
     "iterm": {
-      "command": "/absolute/path/to/cc-iterm-mcp/.venv/bin/python",
+      "command": "/absolute/path/to/goals-iterm-mcp/.venv/bin/python",
       "args": ["-m", "cc_iterm_mcp", "serve"]
     }
   }
