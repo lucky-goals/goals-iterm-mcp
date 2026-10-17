@@ -6,13 +6,45 @@ Terminal tools for MCP clients, powered by the **iTerm2 Python API**. The `serve
 
 ## Run with uvx
 
-Once version 0.1.0 is available on PyPI, run it without cloning this repository:
+Version 0.1.0 is available on [PyPI](https://pypi.org/project/goals-iterm-mcp/). Run it without cloning this repository:
 
 ```sh
 uvx --python 3.12 goals-iterm-mcp@0.1.0 serve
 ```
 
 The Python import path remains `cc_iterm_mcp`. The previous `cc-iterm-mcp` command is retained as a compatibility alias.
+
+## Install through an agent conversation
+
+Copy the prompt below into an agent that can run local commands and configure your MCP client. Replace `[MCP client]` with your client, such as Codex desktop or Claude Code. Local macOS access is required; a cloud-only chat cannot connect to your local iTerm2.
+
+```text
+Please install goals-iterm-mcp 0.1.0 from PyPI and configure it in [MCP client].
+Repository: https://github.com/lucky-goals/goals-iterm-mcp
+
+1. Check that this computer runs macOS and has iTerm2 installed and running.
+   Check for uv/uvx; if missing, install uv using its official instructions.
+   Use Python 3.12. Do not clone the repository or require a project .venv.
+2. Verify the package with:
+   uvx --python 3.12 goals-iterm-mcp@0.1.0 --help
+3. Inspect the client's existing MCP configuration and preserve unrelated settings.
+   Add or update one user-level stdio server named "iterm", avoiding duplicates:
+   command: the absolute path to uvx on this computer
+   args: ["--python", "3.12", "goals-iterm-mcp@0.1.0", "serve"]
+   Use the client's supported configuration format and location. Back up an
+   existing configuration before editing; do not change other servers.
+4. Guide me to enable iTerm2's Python API and approve its authorization dialog
+   if needed. Reload the MCP connection using the client's supported mechanism;
+   tell me if I need to restart the client myself.
+5. Verify the MCP handshake, discovery of all seven tools, and a read-only
+   list_sessions call. Do not send terminal input, read session contents, or
+   create/close windows as part of installation verification.
+6. Report the configuration location, launch command, and verification results.
+   Distinguish a successful standalone connection from tools actually loaded
+   in the target client. If blocked, explain the specific remaining step.
+```
+
+Installing this public package does not require a PyPI account or API token. The configured server exposes all seven tools; the installation check above only lists sessions.
 
 ## Installation and startup
 
