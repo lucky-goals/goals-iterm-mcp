@@ -43,6 +43,8 @@ goals-iterm-mcp 透過 **iTerm2 Python API**，將支援 MCP 的 Agent 與電腦
 
 ## 使用 uvx 執行
 
+目前原始碼版本：**0.1.2**（尚未發布至 PyPI）。
+
 0.1.1 已發布至 [PyPI](https://pypi.org/project/goals-iterm-mcp/)，無需複製儲存庫即可執行：
 
 ```sh

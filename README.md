@@ -43,6 +43,8 @@ Ensure new iTerm windows and tabs inherit the required configuration. goals-iter
 
 ## Run with uvx
 
+Current source version: **0.1.2** (not yet published to PyPI).
+
 Version 0.1.1 is available on [PyPI](https://pypi.org/project/goals-iterm-mcp/). Run it without cloning this repository:
 
 ```sh
