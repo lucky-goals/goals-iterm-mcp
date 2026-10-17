@@ -1,6 +1,6 @@
 # goals-iterm-mcp
 
-[English](README.md) | 简体中文
+[English](README.md) | 简体中文 | [繁體中文](README.zh-TW.md) | [日本語](README.ja.md)
 
 **让 Coding Agent 操作 Mac 上的各种 CLI，在手机上也能推进 vibe coding 任务。**
 
