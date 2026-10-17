@@ -107,7 +107,7 @@ Run the current automated test suite:
 .venv/bin/python -m unittest discover -s tests -v
 ```
 
-As of October 17, 2026, all 69 automated tests, Ruff checks, dependency checks, and the wheel build passed after the connection initialization cleanup fix. See the [test report (Chinese)](docs/test-results.md).
+As of October 17, 2026, all 69 automated tests, Ruff checks, dependency checks, and the wheel build passed after the connection initialization cleanup fix. See the [test report](docs/test-results.md).
 
 Real stdio MCP → iTerm Python API verification covered window and tab creation, text and Enter input, Chinese/emoji screen output, and nonempty scrollback. Both temporary test sessions were closed afterward.
 
@@ -122,7 +122,7 @@ To reproduce the live smoke test, which operates only on newly created `/bin/cat
 
 Runtime modules cover MCP tools, the iTerm backend, read-result types, cursor coordinate conversion, transactions, and connection cleanup. The previous broker/gateway, management UI, CLI certification, and experimental implementations have been removed.
 
-See the [dependency and cleanup record (Chinese)](docs/cleanup-plan.md) for the retention/removal rationale and the [dependency inventory](docs/cleanup-dependencies.json) for the module-level audit.
+See the [dependency and cleanup record](docs/cleanup-plan.md) for the retention/removal rationale and the [dependency inventory](docs/cleanup-dependencies.json) for the module-level audit.
 
 ## License
 
