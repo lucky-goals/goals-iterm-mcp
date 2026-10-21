@@ -1,5 +1,6 @@
 # goals-iterm-mcp
 
+[Website](https://lucky-goals.github.io/goals-iterm-mcp/)
 English | [简体中文](README.zh-CN.md) | [繁體中文](README.zh-TW.md) | [日本語](README.ja.md)
 
 **Use your coding agent to drive the CLIs on your Mac—even when you are working from your phone.**

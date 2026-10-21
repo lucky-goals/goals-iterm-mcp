@@ -1,5 +1,6 @@
 # goals-iterm-mcp
 
+[项目官网](https://lucky-goals.github.io/goals-iterm-mcp/zh/)
 [English](README.md) | 简体中文 | [繁體中文](README.zh-TW.md) | [日本語](README.ja.md)
 
 **让 Coding Agent 操作 Mac 上的各种 CLI，在手机上也能推进 vibe coding 任务。**
