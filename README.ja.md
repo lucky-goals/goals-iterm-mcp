@@ -1,5 +1,6 @@
 # goals-iterm-mcp
 
+[プロジェクトサイト](https://lucky-goals.github.io/goals-iterm-mcp/)
 [English](README.md) | [简体中文](README.zh-CN.md) | [繁體中文](README.zh-TW.md) | 日本語
 
 **コーディングエージェントで Mac 上の CLI を操作。スマートフォンからでも開発を進められます。**

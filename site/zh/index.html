@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>goals-iterm-mcp — 面向 AI 编程代理的 iTerm2 MCP 服务器</title>
+<meta name="description" content="goals-iterm-mcp 通过本地 MCP 将 AI 编程代理连接到 macOS 的 iTerm2，协调 Claude Code、Codex CLI 等终端工具。">
+<meta name="google-site-verification" content="RSlia45OxWhqX6iyxyoSFyVtlpCfAS38nRmpzuDwfc4">
+<link rel="canonical" href="https://lucky-goals.github.io/goals-iterm-mcp/zh/">
+<link rel="alternate" hreflang="en" href="https://lucky-goals.github.io/goals-iterm-mcp/">
+<link rel="alternate" hreflang="zh-CN" href="https://lucky-goals.github.io/goals-iterm-mcp/zh/">
+<link rel="alternate" hreflang="x-default" href="https://lucky-goals.github.io/goals-iterm-mcp/">
+<meta property="og:type" content="website"><meta property="og:site_name" content="goals-iterm-mcp">
+<meta property="og:title" content="goals-iterm-mcp — 面向 AI 编程代理的 iTerm2 MCP 服务器"><meta property="og:description" content="goals-iterm-mcp 通过本地 MCP 将 AI 编程代理连接到 macOS 的 iTerm2，协调 Claude Code、Codex CLI 等终端工具。"><meta property="og:url" content="https://lucky-goals.github.io/goals-iterm-mcp/zh/"><meta property="og:locale" content="zh_CN">
+<meta name="twitter:card" content="summary">
+<meta name="theme-color" content="#142f4a">
+<link rel="icon" href="../assets/favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../assets/style.css">
+<script type="application/ld+json">{"@context": "https://schema.org", "@type": "SoftwareSourceCode", "name": "goals-iterm-mcp", "description": "goals-iterm-mcp 通过本地 MCP 将 AI 编程代理连接到 macOS 的 iTerm2，协调 Claude Code、Codex CLI 等终端工具。", "url": "https://lucky-goals.github.io/goals-iterm-mcp/zh/", "codeRepository": "https://github.com/lucky-goals/goals-iterm-mcp", "license": "https://opensource.org/license/mit", "inLanguage": "zh-CN", "author": {"@type": "Person", "name": "lucky-goals", "url": "https://github.com/lucky-goals"}}</script>
+</head>
+<body>
+<a class="skip" href="#main">跳至正文</a>
+<header><a class="brand" href="../"><span>↳</span> goals-iterm-mcp</a><nav aria-label="主导航"><a href="#install">安装配置</a><a href="https://github.com/lucky-goals/goals-iterm-mcp">GitHub ↗</a><a href="../" lang="en" hreflang="en">English</a></nav></header>
+<main id="main">
+<section class="hero" aria-labelledby="headline"><div><div class="eyebrow">macOS / 本地 stdio MCP / MIT 开源</div><h1 id="headline">多个编程代理，<br>多个终端，<br>一个对话入口。</h1><p class="lede">让编程代理访问你的 iTerm2。在同一个对话中启动 Coding CLI、查看进度，并发送下一步指令。</p><div class="actions"><a class="button" href="#install">安装配置 ↓</a><a class="button secondary" href="https://github.com/lucky-goals/goals-iterm-mcp/blob/main/README.zh-CN.md">阅读文档 ↗</a></div></div><div class="terminal" aria-label="流程示意，非实时终端"><div class="terminal-title"><span class="lights" aria-hidden="true"><i></i><i></i><i></i></span>工作流程 / 示意</div><div class="terminal-body"><p><span class="prompt">$</span> uvx --python 3.12<br>  goals-iterm-mcp@0.1.2 serve</p><p><span class="prompt">agent → list_sessions</span><br><span class="comment">确认准确的会话 ID。</span></p><p><span class="prompt">agent → read_screen</span><br><span class="comment">查看进度，再决定下一步。</span></p></div></div></section>
+<div class="flow" aria-label="连接流程"><span>你的对话</span> <b aria-hidden="true">→</b> <span>支持 MCP 的代理</span> <b aria-hidden="true">→</b> <span>iTerm2</span> <b aria-hidden="true">→</b> <span>Coding CLI</span></div>
+<section aria-labelledby="capabilities"><h2 id="capabilities">围绕你的终端开展工作。</h2><div class="features"><article class="feature"><h3>随时查看执行进度</h3><p>通过明确的会话 ID，列出终端会话、读取当前屏幕或历史输出。</p></article><article class="feature"><h3>为每个项目安排独立终端</h3><p>创建窗口和标签页、命名会话，并把指令发送到目标终端。</p></article><article class="feature"><h3>根据结果推进下一步</h3><p>由协调代理检查结果、补充指令，并验证任务是否达到完成标准。</p></article></div></section>
+<section class="setup" id="install" aria-labelledby="setup-title"><div><div class="eyebrow">安装与连接</div><h2 id="setup-title">连接你的 Mac。</h2><p class="intro">MCP 服务器让代理访问本地终端。先准备 iTerm2，再配置使用它的 MCP 客户端。</p><p><a href="https://github.com/lucky-goals/goals-iterm-mcp/blob/main/README.zh-CN.md">查看完整文档 ↗</a></p></div><div><ol class="steps"><li><strong>准备 iTerm2</strong><p>使用 macOS，并保持 iTerm2 运行。在 Settings → General → Magic 中启用 Python API，首次连接时批准 iTerm2 授权提示。</p></li><li><strong>检查安装包</strong><p>如未安装 uv，请按其官方说明安装。当前文档使用 0.1.2 版本和 Python 3.12。</p><pre><code>uvx --python 3.12 goals-iterm-mcp@0.1.2 --help</code></pre><p><a href="https://docs.astral.sh/uv/getting-started/installation/">安装 uv</a> · <a href="https://pypi.org/project/goals-iterm-mcp/0.1.2/">PyPI 0.1.2</a></p></li><li><strong>配置 MCP 客户端</strong><p>执行 command -v uvx 获取绝对路径。按客户端支持的格式添加下面的配置，并保留其他已有设置。</p><pre><code>{
+  &quot;mcpServers&quot;: {
+    &quot;iterm&quot;: {
+      &quot;command&quot;: &quot;/absolute/path/to/uvx&quot;,
+      &quot;args&quot;: [
+        &quot;--python&quot;,
+        &quot;3.12&quot;,
+        &quot;goals-iterm-mcp@0.1.2&quot;,
+        &quot;serve&quot;
+      ]
+    }
+  }
+}</code></pre></li><li><strong>验证连接</strong><p>重新加载 MCP 连接，检查工具发现，并调用 list_sessions。执行任务前，先在 iTerm2 中完成目标 Coding CLI 的登录配置。</p></li></ol><p class="note">客户端必须能够访问这台 Mac。纯云端聊天无法直接连接本地 iTerm2；手机使用需要远程界面连接到具备本地 MCP 访问能力的代理。</p></div></section>
+<section class="example" aria-labelledby="example-title"><div class="eyebrow">任务示例</div><h2 id="example-title">从明确的任务开始。</h2><pre><code>在一个独立的 iTerm2 会话中，进入 /path/to/project 并启动我的 Coding CLI。
+让它先定位登录问题，再修复并执行相关测试。
+发送后续指令前先查看进度，最后根据实际结果验收。</code></pre></section>
+<section aria-labelledby="faq"><h2 id="faq">开始之前。</h2><details><summary>它和配套 Skill 有什么区别？</summary><p>MCP 服务器提供终端操作工具。goals-iterm-skill 提供任务委托、监控、决策、恢复和验收的流程指令。</p></details><details><summary>服务器可以访问哪些终端？</summary><p>默认可以操作当前用户的所有 iTerm2 会话。使用 --read-only 仅观察；使用一个或多个 --session-id &lt;ID&gt; 限定会话。限定会话后无法创建窗口和标签页。</p></details><details><summary>发送成功是否代表命令完成？</summary><p>不代表。确认信息只说明 iTerm2 API 调用成功，协调代理仍需查看终端输出并验证执行结果。</p></details><details><summary>它自带后台监控服务吗？</summary><p>不自带。服务器提供终端工具；监控、持续推进和调度由协调代理及其宿主负责。</p></details></section>
+<section><div class="related"><div><h3>配合任务协调流程使用。</h3><p>搭配 goals-iterm-skill，建立包含监控、恢复、验收与 Markdown 审计记录的任务委托流程。</p></div><a class="button secondary" href="https://lucky-goals.github.io/goals-iterm-skill/zh/">goals-iterm-skill ↗</a></div></section>
+</main><footer><span>© 2026 lucky-goals · MIT</span><span><a href="https://github.com/lucky-goals/goals-iterm-mcp">源代码</a> · <a href="https://github.com/lucky-goals/goals-iterm-mcp/issues">问题反馈</a> · <a href="https://github.com/lucky-goals/goals-iterm-mcp/blob/main/LICENSE">开源许可</a></span></footer>
+</body></html>
