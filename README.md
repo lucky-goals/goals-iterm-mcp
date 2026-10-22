@@ -21,7 +21,7 @@ For example, give the supervising agent this goal:
 
 > Guide the coding CLI in the project's dedicated iTerm session until it has diagnosed the login issue, implemented a fix, and passed the relevant tests. Inspect progress between steps, provide follow-up instructions when needed, and verify the final result against these criteria. Do not duplicate tasks that are still running. Ask me when a decision outside this scope is required, and report completion with the changes and test results.
 
-The `serve` command provides eight stdio MCP tools for listing sessions, reading terminal output, sending text and keys, creating windows and tabs, and naming sessions.
+The repository source provides 12 stdio MCP tools: the original session discovery, terminal read/write, creation, and naming tools plus four closing tools. Version 0.2.0 includes all 12 tools, including the four closing tools below. See the [closing-tools implementation specification](docs/closing-tools-spec.md) for the source contract.
 
 ## Prerequisites
 
@@ -44,10 +44,10 @@ Ensure new iTerm windows and tabs inherit the required configuration. goals-iter
 
 ## Run with uvx
 
-Version 0.1.2 is available on [PyPI](https://pypi.org/project/goals-iterm-mcp/). Run it without cloning this repository:
+Version 0.2.0 is available on [PyPI](https://pypi.org/project/goals-iterm-mcp/). This release includes all 12 tools. Run it without cloning this repository:
 
 ```sh
-uvx --python 3.12 goals-iterm-mcp@0.1.2 serve
+uvx --python 3.12 goals-iterm-mcp@0.2.0 serve
 ```
 
 The Python import path is `goals_iterm_mcp`, and the command is `goals-iterm-mcp`.
@@ -57,18 +57,18 @@ The Python import path is `goals_iterm_mcp`, and the command is `goals-iterm-mcp
 Copy the prompt below into an agent that can run local commands and configure your MCP client. Replace `[MCP client]` with your client, such as Codex desktop or Claude Code. Local macOS access is required; a cloud-only chat cannot connect to your local iTerm2.
 
 ```text
-Please install goals-iterm-mcp 0.1.2 from PyPI and configure it in [MCP client].
+Please install goals-iterm-mcp 0.2.0 from PyPI and configure it in [MCP client].
 Repository: https://github.com/lucky-goals/goals-iterm-mcp
 
 1. Check that this computer runs macOS and has iTerm2 installed and running.
    Check for uv/uvx; if missing, install uv using its official instructions.
    Use Python 3.12. Do not clone the repository or require a project .venv.
 2. Verify the package with:
-   uvx --python 3.12 goals-iterm-mcp@0.1.2 --help
+   uvx --python 3.12 goals-iterm-mcp@0.2.0 --help
 3. Inspect the client's existing MCP configuration and preserve unrelated settings.
    Add or update one user-level stdio server named "iterm", avoiding duplicates:
    command: the absolute path to uvx on this computer
-   args: ["--python", "3.12", "goals-iterm-mcp@0.1.2", "serve"]
+   args: ["--python", "3.12", "goals-iterm-mcp@0.2.0", "serve"]
    Use the client's supported configuration format and location. Back up an
    existing configuration before editing; do not change other servers.
 4. Guide me to enable iTerm2's Python API and approve its authorization dialog
@@ -83,6 +83,54 @@ Repository: https://github.com/lucky-goals/goals-iterm-mcp
 ```
 
 Installing this public package does not require a PyPI account or API token. The configured server exposes the installed version’s tools; the installation check above only lists sessions.
+
+## Update an existing installation
+
+First inspect the existing `iterm` server configuration and back it up. Update that entry in place; preserve its environment variables, `--read-only`, `--session-id` restrictions, and unrelated servers. Use the same installation method as before.
+
+### Installed with uvx
+
+Check the [PyPI releases](https://pypi.org/project/goals-iterm-mcp/#history) and [GitHub Releases](https://github.com/lucky-goals/goals-iterm-mcp/releases), then verify the latest published package starts:
+
+```sh
+uvx --python 3.12 goals-iterm-mcp@latest --help
+```
+
+This command does **not** update the MCP client's saved configuration. In its existing `args`, replace `goals-iterm-mcp@0.1.2` (or another old pin) with `goals-iterm-mcp@<VERSION>`, replacing `<VERSION>` with the verified release number. Keep the absolute `uvx` command path and other arguments. Pinning a version makes upgrades deliberate and allows rollback to the previous pin.
+
+Alternatively, configure `goals-iterm-mcp@latest` to follow published updates on future launches. This can change the version at each launch; omitting the version is not equivalent because uvx can reuse a cached tool. See [uv's tool version documentation](https://docs.astral.sh/uv/concepts/tools/#tool-versions). “Latest” means a published package, not unreleased repository changes.
+
+### Installed from source or with pip
+
+For the editable source installation documented below, save local changes and confirm the intended branch first. From the original clone, update and reinstall into the same Python 3.12 environment:
+
+```sh
+git pull --ff-only
+.venv/bin/python -m pip install --require-hashes -r requirements.lock
+.venv/bin/python -m pip install --no-build-isolation --no-deps -e .
+.venv/bin/python -m goals_iterm_mcp --help
+```
+
+If Git refuses the update, resolve the local changes or branch divergence before continuing. Keep the client's absolute Python path pointing at this environment. If you instead installed a PyPI package with pip, use that server environment's interpreter: `/absolute/path/to/.venv/bin/python -m pip install --upgrade goals-iterm-mcp`; upgrading another environment does not update this MCP server.
+
+### Reload and verify
+
+Restart/reconnect the `iterm` MCP server using the client's supported control, or restart the client if necessary. Updating files does not replace an already running server. For Codex, use **Settings → MCP servers → Restart**, or restart Codex. See the [official MCP configuration guide](https://learn.chatgpt.com/docs/extend/mcp?surface=cli).
+
+After reconnecting, query the tools actually available in that client and run only `list_sessions`. Match the tool list to the installed release; for version 0.2.0, verify all 12 tools, including `close_session`, `close_tab`, `close_window`, and `clean_all_sessions`. A standalone handshake does not prove an existing conversation has refreshed its tools. If it still lists the old interfaces, reconnect or start a new conversation and check again. Do not create/close terminals or send input just to verify an upgrade. Never start Python with `--reload`.
+
+You can also ask a local agent to do the update:
+
+```text
+Update the existing goals-iterm-mcp in [MCP client] to the latest published release.
+Inspect its current launch command and installation method first. Back up and
+update the existing iterm entry without duplicates; preserve environment variables,
+read-only/session restrictions, and other servers. Verify the release on PyPI and
+GitHub, update its version pin or the exact environment it uses, then reload the
+MCP connection. Verify actual client tool discovery and a read-only list_sessions
+call. Report the version, configuration path, and results; clearly state any
+manual restart still required. Do not switch a source install to PyPI silently.
+```
 
 ## Installation and startup
 
@@ -114,10 +162,10 @@ Example MCP client configuration (replace the command with your absolute path):
 
 Optional arguments:
 
-- `--read-only`: expose only session discovery and read tools.
+- `--read-only`: expose only the three read-only tools: `list_sessions`, `read_screen`, and `read_history`.
 - `--session-id <ID>`: restrict access to a specific session; repeat to allow multiple sessions. Window and tab creation is disabled when this restriction is active.
 
-By default, the server can operate on all iTerm sessions belonging to the current user. Every read or send operation requires an exact `session_id` from `list_sessions`; targets are never inferred from focus or titles.
+By default, the server can operate on all iTerm sessions belonging to the current user. Read and send operations require an exact `session_id` from `list_sessions`; closing tools also accept the explicit selectors documented below. Targets are never inferred from focus, wildcards, prefixes, or titles.
 
 ## MCP tools
 
@@ -131,10 +179,28 @@ By default, the server can operate on all iTerm sessions belonging to the curren
 | `create_window` | Optional `command` | Create a window using the default profile, optionally with a startup command; return its IDs. |
 | `create_tab` | `window_id`, optional `command` | Create a tab in the specified window, optionally with a startup command. |
 | `rename_session` | `session_id`, optional `name` | Rename an existing session; omit `name` to choose a random unused nickname. |
+| `close_session` | `session_id=None`, `nickname=None`, `force=False`, `dry_run=False` | Close one selected session after CLI exit and native-close verification. Exactly one of `session_id` or `nickname` is required. |
+| `close_tab` | `tab_id=None`, `session_id=None`, `nickname=None`, `force=False`, `dry_run=False` | Close the tab containing the selected session or tab. Exactly one selector is required. |
+| `close_window` | `window_id=None`, `session_id=None`, `nickname=None`, `force=False`, `dry_run=False` | Close the window containing the selected session or window. Exactly one selector is required. |
+| `clean_all_sessions` | `force=False`, `dry_run=False` | Inspect the initial session snapshot and clean authorized sessions. By default, skip busy, unknown, or unrecoverable sessions; `force=true` attempts every authorized session in that snapshot. |
 
-Sessions created with `create_window` or `create_tab` automatically receive a random nickname from a built-in pool of 200 distinct names, each 4–7 characters long. Existing sessions can be named with `rename_session`. Explicit names may contain up to 64 characters; name comparisons ignore case. Names already used by another live session are rejected; closed sessions release their names. If the pool is exhausted, automatic naming fails before creating a session.
+### Closing tools
 
-To act on a name mentioned in conversation, first use `list_sessions` to find its exact `session_id`, then pass that ID to the requested tool.
+The four closing tools are included in version 0.2.0. The complete contract is in the [closing-tools implementation specification](docs/closing-tools-spec.md).
+
+`close_session`, `close_tab`, and `close_window` require exactly one selector. IDs are matched explicitly and are never treated as nickname fallbacks. A nickname is a session-scoped selector that matches the catalogue name after trimming and case-folding; ambiguity is an error. For a tab or window close, a session selector chooses its containing tab or window. There is no focus, wildcard, or prefix targeting. A tab or window containing any session outside the configured allowlist is refused.
+
+Ordinary closes preflight every affected session before sending terminal input. Busy, waiting, or unknown activity refuses the whole targeted operation. `clean_all_sessions` skips busy, unknown, and unrecoverable sessions by default and closes only confirmed idle sessions; it retains the remaining sessions and windows. With `force=true`, cleanup attempts every authorized session in its initial snapshot, while sessions that arrive later are excluded. `force` authorizes interruption through the activity gate only: it does not bypass the allowlist, ambiguous identity, changed targets, or recovery-write failures, and it is not an implicit `SIGKILL`. Native iTerm force-confirmation behavior is separate from this interruption authorization.
+
+Before the first interruption, CLI exit, or native close, the service writes a private recovery receipt containing metadata only. A recognized chat CLI must provide its actual chat ID before interruption or exit; the service does not send chat text or slash commands merely to discover that ID. Plain shells and ordinary jobs have an empty `cli_sessions` array, and unknown CLI identity is never silently downgraded to a shell or job. If current-process or chat identity evidence is unavailable or cannot be tied to the target, the operation fails closed (cleanup may report the session as skipped). Screen silence, age, low CPU, a completed-looking answer, or a session-list `in_progress` value is not completion evidence. CLI exit is bounded and verified; if exit cannot be verified, the service does not issue a native close for that target, although iTerm's configured auto-close-on-exit behavior may still remove a pane as a side effect of the CLI's own exit. The service never kills a shared daemon or a process selected only by name.
+
+Current recovery support is intentionally narrow. Claude and Codex can identify a chat from a trusted process registration with a bound chat ID or a transcript/rollout file opened by the exact current process; a UUID found only in startup arguments is reported but remains blocked. Kiro's saved-session listing and startup arguments do not prove current chat identity, so it requires a process-bound known ID and refuses an unproven identity even with `force`. Cursor's passive path accepts a UUID only from a recognized log file opened by the supplied PID; startup arguments alone are insufficient. CLI task activity is generally `unknown` unless trusted lifecycle evidence supplies it; the adapter does not automatically capture every chat or every running CLI.
+
+Results include `operation`, `status`, `force`, `dry_run`, `target`, recovery receipt IDs and paths, and closed, skipped, failed, and unknown session lists. `status` is one of `closed`, `partial`, `refused`, `noop`, `dry_run`, or `unknown`. Session results include iTerm IDs, nickname, `cli_sessions`, interruption, exit, and closure status. Chat records include `cli`, `chat_uuid`, `cwd`, identity source, persistence status, and a structured resume executable/argv. `chat_uuid` identifies the chat, but it does not by itself prove that history was saved or that the resume command was tested; those are separate result fields. The topology is refreshed after a close, because an API acknowledgement is not closure proof. Lost or timed-out responses become `unknown` and are never retried automatically. Refused, failed, and unknown operations are tool errors with structured data; cleanup skips alone are not errors. Partial results report completed side effects and do not reopen terminals. Dry runs send no input, write no receipts, change no names, and close no objects.
+
+Sessions created with `create_window` or `create_tab` automatically receive a random nickname from a built-in pool of 200 distinct names, each 4–7 characters long. Existing sessions can be named with `rename_session`. Explicit names may contain up to 64 characters; name comparisons ignore case. Names already used by another live session are rejected; closed sessions release their names. If the pool is exhausted, automatic naming fails before creating a session. Closing-tool nickname selectors use the same live session catalogue and trim and case-fold the name before matching.
+
+For read/send operations, first use `list_sessions` to find the exact `session_id`. Closing tools may use an exact nickname or an explicit target ID under the selector rules above; do not infer a target from focus or a title.
 
 Supported keys: `enter`, `tab`, `escape`, `backspace`, `up`, `down`, `left`, `right`, `ctrl_c`, `ctrl_d`, `ctrl_u`, and `ctrl_l`.
 
@@ -144,17 +210,26 @@ Screen and history reads return rendered terminal output, not a CLI editor's int
 
 ## Verification
 
-Run the current automated test suite:
+Run the targeted tests for the closing tools, recovery adapter, and direct backend:
 
 ```sh
-.venv/bin/python -m unittest discover -s tests -v
+.venv/bin/python -m unittest tests.test_closing tests.test_closing_backend tests.test_cli_recovery tests.test_direct -q
 ```
 
-As of October 17, 2026, all 69 automated tests, Ruff checks, dependency checks, and the wheel build passed after the connection initialization cleanup fix. See the [test report](docs/test-results.md).
+On October 22, 2026, these 69 targeted tests passed. Changed-file Ruff checks and `git diff --check` also passed; this verification does not claim a full-suite result.
 
-Real stdio MCP → iTerm Python API verification covered window and tab creation, text and Enter input, Chinese/emoji screen output, and nonempty scrollback. Both temporary test sessions were closed afterward.
+The opt-in closing smoke test creates only new allowlisted iTerm sessions. Show its plan or execute it with:
 
-To reproduce the live smoke test, which operates only on newly created `/bin/cat` sessions:
+```sh
+.venv/bin/python scripts/smoke_closing.py          # Show the plan only
+.venv/bin/python scripts/smoke_closing.py --run   # Run the opt-in native smoke test
+```
+
+The October 22, 2026 run passed: three targeted native closes succeeded; default cleanup closed one idle session and skipped one running `sleep` session; forced cleanup then closed one session; all six pre-existing sessions remained.
+
+Earlier real stdio MCP → iTerm Python API verification covered window and tab creation, text and Enter input, Chinese/emoji screen output, and nonempty scrollback. Both temporary test sessions were closed afterward.
+
+To reproduce that earlier live smoke test, which operates only on newly created `/bin/cat` sessions:
 
 ```sh
 .venv/bin/python scripts/smoke_iterm.py         # Show the plan only
@@ -163,7 +238,7 @@ To reproduce the live smoke test, which operates only on newly created `/bin/cat
 
 ## Project structure
 
-Runtime modules cover MCP tools, the iTerm backend, read-result types, cursor coordinate conversion, transactions, and connection cleanup. The previous broker/gateway, management UI, CLI certification, and experimental implementations have been removed.
+Runtime modules cover MCP tools, the iTerm backend, read-result types, cursor coordinate conversion, transactions, connection cleanup, and the closing-tool safety contract. The previous broker/gateway, management UI, and experimental implementations have been removed; closing-tool CLI identity remains dependent on current process and runtime evidence.
 
 See the [dependency and cleanup record](docs/cleanup-plan.md) for the retention/removal rationale and the [dependency inventory](docs/cleanup-dependencies.json) for the module-level audit.
 

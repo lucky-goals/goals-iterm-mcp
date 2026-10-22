@@ -25,7 +25,7 @@ async def smoke() -> dict:
                 async with ClientSession(*streams) as client:
                     await client.initialize()
                     results["tool_count"] = len((await client.list_tools()).tools)
-                    assert results["tool_count"] == 8
+                    assert results["tool_count"] == 12
 
                     async def call(name, args):
                         result = await client.call_tool(name, args)
@@ -151,7 +151,7 @@ def main():
     args = parser.parse_args()
     if not args.run:
         print(
-            "Plan only: create a new window and tab running /bin/cat, verify eight MCP tools and nickname persistence, close both test sessions. Add --run to execute."
+            "Plan only: discover twelve MCP tools, create a new window and tab running /bin/cat, verify terminal I/O and nickname persistence, close both test sessions. Add --run to execute."
         )
         return
     asyncio.run(smoke())

@@ -35,7 +35,7 @@ class Page(HTMLParser):
 
 pages = {p: Page(p.read_text()) for p in root.rglob('*.html') if p.name == 'index.html'}
 assert len(pages) == 2, 'Expected English and Chinese homepages'
-slug = root.parent.name
+slug = 'goals-iterm-mcp'
 base = f'https://lucky-goals.github.io/{slug}/'
 urls = set()
 for path, page in pages.items():

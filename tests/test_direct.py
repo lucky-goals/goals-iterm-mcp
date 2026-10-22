@@ -22,9 +22,25 @@ def backend():
 
 
 class DirectTests(unittest.IsolatedAsyncioTestCase):
+    async def test_close_tool_schemas_and_strict_force(self):
+        service = ItermTools(backend())
+        service.invoke_close = AsyncMock()
+        server = build_server(service)
+        tools = {tool.name: tool for tool in await server.list_tools()}
+        for name in ("close_session", "close_tab", "close_window", "clean_all_sessions"):
+            tool = tools[name]
+            self.assertTrue(tool.annotations.destructiveHint)
+            self.assertFalse(tool.annotations.readOnlyHint)
+            self.assertFalse(tool.annotations.idempotentHint)
+            self.assertIs(tool.inputSchema["properties"]["force"]["default"], False)
+            self.assertIs(tool.inputSchema["properties"]["dry_run"]["default"], False)
+            with self.assertRaises(ToolError):
+                await server.call_tool(name, {"force": "false"})
+        service.invoke_close.assert_not_awaited()
+
     async def test_tool_surface_and_read_only(self):
         tools = await build_server(ItermTools(backend())).list_tools()
-        self.assertEqual({t.name for t in tools}, {"list_sessions", "read_screen", "read_history", "send_text", "send_keys", "rename_session", "create_window", "create_tab"})
+        self.assertEqual({t.name for t in tools}, {"list_sessions", "read_screen", "read_history", "send_text", "send_keys", "rename_session", "create_window", "create_tab", "close_session", "close_tab", "close_window", "clean_all_sessions"})
         reads = await build_server(ItermTools(backend()), read_only=True).list_tools()
         self.assertEqual({t.name for t in reads}, {"list_sessions", "read_screen", "read_history"})
 
@@ -96,7 +112,7 @@ class DirectTests(unittest.IsolatedAsyncioTestCase):
     async def test_read_only_write_calls_are_rejected(self):
         fake = backend()
         server = build_server(ItermTools(fake), read_only=True)
-        for name in ("send_text", "send_keys", "rename_session", "create_window", "create_tab"):
+        for name in ("send_text", "send_keys", "rename_session", "create_window", "create_tab", "close_session", "close_tab", "close_window", "clean_all_sessions"):
             with self.assertRaises(ToolError):
                 await server.call_tool(name, {})
         fake.send.assert_not_awaited()
@@ -156,10 +172,47 @@ build_server(ItermTools(fake)).run()
         async with stdio_client(StdioServerParameters(command=sys.executable, args=["-c", code])) as streams:
             async with ClientSession(*streams) as client:
                 await client.initialize()
-                self.assertEqual(len((await client.list_tools()).tools), 8)
+                self.assertEqual(len((await client.list_tools()).tools), 12)
                 result = await client.call_tool("read_screen", {"session_id": "session-1"})
                 self.assertFalse(result.isError)
                 self.assertEqual(result.structuredContent["screen"]["lines"][0]["text"], "界😀")
+
+    async def test_closing_stdio_preserves_structured_results_and_cleanup_skips(self):
+        code = '''
+import tempfile
+from tests.test_direct import backend
+from tests.test_closing import FakeBackend, row, idle_probe
+from goals_iterm_mcp.closing import RecoveryStore
+from goals_iterm_mcp.direct import ItermTools, build_server
+chat = {"cli": "codex", "chat_uuid": "12345678-1234-1234-1234-123456789abc",
+        "cwd": "/tmp", "identity_source": "fixture",
+        "persistence_status": "unknown",
+        "resume": {"executable": "codex", "argv": ["resume", "12345678-1234-1234-1234-123456789abc"]}}
+closing = FakeBackend([row("idle", name="idle"), row("busy", name="busy")], {
+    "idle": idle_probe(), "busy": idle_probe(state="busy", cli_sessions=[chat])})
+with tempfile.TemporaryDirectory() as directory:
+    build_server(ItermTools(backend(), closing_backend=closing,
+                           recovery_store=RecoveryStore(directory))).run()
+'''
+        async with stdio_client(StdioServerParameters(command=sys.executable, args=["-c", code])) as streams:
+            async with ClientSession(*streams) as client:
+                await client.initialize()
+                cleanup = await client.call_tool("clean_all_sessions", {})
+                self.assertFalse(cleanup.isError)
+                self.assertEqual(cleanup.structuredContent["closed_sessions"][0]["session_id"], "idle")
+                self.assertEqual(cleanup.structuredContent["skipped_sessions"][0]["session_id"], "busy")
+                refused = await client.call_tool("close_session", {"session_id": "busy"})
+                self.assertTrue(refused.isError)
+                self.assertEqual(refused.structuredContent["status"], "refused")
+                self.assertEqual(refused.structuredContent["failed_sessions"][0]["cli_sessions"][0]["chat_uuid"],
+                                 "12345678-1234-1234-1234-123456789abc")
+                closed = await client.call_tool("close_session", {"session_id": "busy", "force": True})
+                self.assertFalse(closed.isError)
+                payload = closed.structuredContent
+                self.assertEqual(payload["status"], "closed")
+                self.assertTrue(payload["recovery_record_path"])
+                self.assertEqual(payload["closed_sessions"][0]["cli_sessions"][0]["chat_uuid"],
+                                 "12345678-1234-1234-1234-123456789abc")
 
 
 if __name__ == "__main__":
