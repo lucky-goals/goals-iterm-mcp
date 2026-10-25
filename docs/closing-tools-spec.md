@@ -1,16 +1,16 @@
 # Terminal closing tools — implementation contract
 
-Status: implementation specification, 2026-10-22. This supersedes the earlier
-proposal that `clean_all_sessions` refused the entire request when one session
-was busy. No package release is implied by this change.
+Status: implementation specification for goals-iterm-mcp 0.2.1, 2026-10-25. This
+supersedes the earlier proposal that `clean_all_sessions` refused the entire
+request when one session was busy. The four closing tools were first introduced
+in version 0.2.0.
 
-## Main-only read-only capability audit
+## Read-only capability audit
 
-The current `main` source also registers an unreleased, read-only
-`inspect_sessions` increment. It is not included in the published 0.2.0
-package, and it must not be described as part of the four closing tools below.
-The published 0.2.0 tool count remains 12; the current `main` source count is
-13.
+The 0.2.1 package also registers the read-only `inspect_sessions` diagnostic.
+It is included alongside the four closing tools. The complete package exposes
+13 tools, including four read-only tools: `list_sessions`, `read_screen`,
+`read_history`, and `inspect_sessions`.
 
 Public signature:
 
@@ -130,6 +130,8 @@ lock, connects once, and maps error statuses to MCP CallToolResult.isError.
 - Busy sibling refuses tab/window; closing an idle sibling alone succeeds.
 - Default cleanup skips busy and unknown, force cleanup includes busy.
 - All four tools honor allowlists/read-only mode and default force=false.
+- `inspect_sessions` honors mutually exclusive selectors and allowlist scope,
+  and never writes to a terminal or invokes lifecycle operations.
 - Recovery receipt precedes every terminal write; persistence failure writes
   nothing; successful/partial/unknown responses preserve chat UUIDs.
 - Chat identity missing, background jobs, stale process IDs, changed tab
