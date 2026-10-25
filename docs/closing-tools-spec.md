@@ -4,6 +4,43 @@ Status: implementation specification, 2026-10-22. This supersedes the earlier
 proposal that `clean_all_sessions` refused the entire request when one session
 was busy. No package release is implied by this change.
 
+## Main-only read-only capability audit
+
+The current `main` source also registers an unreleased, read-only
+`inspect_sessions` increment. It is not included in the published 0.2.0
+package, and it must not be described as part of the four closing tools below.
+The published 0.2.0 tool count remains 12; the current `main` source count is
+13.
+
+Public signature:
+
+```text
+inspect_sessions(session_id=None, nickname=None)
+```
+
+`session_id` and `nickname` are mutually exclusive. An exact `session_id` or a
+unique nickname after trimming and case-folding selects one authorized session.
+Omitting both selectors inspects every currently authorized visible session.
+An invalid, ambiguous, missing, or out-of-scope selector fails without a
+terminal write.
+
+The result is shaped as `{sessions: [...], observation: ...}`. Each session
+diagnostic includes the session/tab/window identity and bounded `prompt`,
+`process`, `cli`, `terminal_activity`, `business_acceptance`, and
+`close_readiness` sections. It can report evidence availability, observed
+activity, stable process/CLI identity, chat persistence observations, blocker
+codes, and remediation advice. `business_acceptance` is always
+`not_observed`; `close_readiness` is advisory: its `status` is
+`eligible_if_unchanged`, `blocked`, or `unknown`, and its `ready` boolean is
+true only for `eligible_if_unchanged`. A `ready: true` result is not
+authorization and does not guarantee that a later close will succeed. Callers
+must re-probe immediately before lifecycle writes.
+
+The audit path only reads evidence. It does not send terminal input, exit a
+CLI, persist a recovery receipt, invoke `CloseService`, or call native close.
+The top-level observation explicitly states that the result is not
+authorization, business completion, or a close/exit commitment.
+
 ## Public tools
 
 - `close_session(session_id=None, nickname=None, force=False, dry_run=False)`

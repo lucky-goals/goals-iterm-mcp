@@ -43,6 +43,26 @@ import uuid
 SUPPORTED_CLIS = frozenset({"claude", "codex", "cursor", "kiro"})
 Activity = Literal["idle", "busy", "waiting", "unknown", "exited"]
 
+# These values are intentionally about the *quality of an observation*, not
+# about a CLI's chat content.  A chat UUID can be useful for diagnostics while
+# still being unsafe to use for interruption when its process binding is only
+# a startup claim or a caller supplied registration.
+IdentityStatus = Literal["verified", "startup_only", "unverified"]
+
+_IDENTITY_BLOCK_CODES = frozenset(
+    {
+        "CLI_IDENTITY_AMBIGUOUS",
+        "CLI_IDENTITY_MISSING",
+        "CLI_IDENTITY_STARTUP_ONLY",
+        "CLI_IDENTITY_UNVERIFIED",
+        "CLI_IDENTITY_EXPIRED",
+        "PROCESS_IDENTITY_MISSING",
+        "PROCESS_IDENTITY_CHANGED",
+        "PROCESS_IDENTITY_UNVERIFIED",
+        "CLI_UNSUPPORTED",
+    }
+)
+
 # Cursor's process log is not a transcript API.  Keep reads bounded and retain
 # only the conversationId from a classification-init line.  In particular,
 # do not parse arbitrary JSON log fields, which may contain prompts or tokens.
@@ -141,7 +161,10 @@ class ChatEvidence:
 
     ``identity_source`` describes how the id was tied to the current process;
     it is not a claim that the CLI has durable history.  ``persistence_status``
-    is deliberately an opaque, small value supplied by an adapter.
+    is deliberately an opaque, small value supplied by an adapter.  The
+    separate ``identity_status`` field prevents a caller-supplied registration
+    from looking equivalent to a UUID found in a file currently opened by the
+    observed PID.
     """
 
     cli: str
@@ -151,6 +174,7 @@ class ChatEvidence:
     persistence_status: str | None = None
     resume_executable: str | None = None
     resume_argv: tuple[str, ...] = ()
+    identity_status: IdentityStatus = "unverified"
 
     def __post_init__(self) -> None:
         cli = normalize_cli(self.cli)
@@ -169,6 +193,8 @@ class ChatEvidence:
             self.persistence_status, str
         ):
             raise ValueError("persistence_status must be a string or null")
+        if self.identity_status not in {"verified", "startup_only", "unverified"}:
+            raise ValueError("invalid identity_status")
         if self.resume_executable is None:
             object.__setattr__(self, "resume_executable", self.cli)
         if not isinstance(self.resume_executable, str) or not self.resume_executable:
@@ -186,6 +212,7 @@ class ChatEvidence:
             "chat_uuid": self.chat_uuid,
             "cwd": self.cwd,
             "identity_source": self.identity_source,
+            "identity_status": self.identity_status,
             "persistence_status": self.persistence_status,
             "resume": {
                 "executable": self.resume_executable,
@@ -210,6 +237,11 @@ class ProcessBinding:
     process_start: str | None = None
     activity: Activity = "unknown"
     activity_reason: str = "no passive lifecycle signal"
+    # A binding is a caller hint until observe() proves the PID/start pair
+    # and, for a chat id, a current process-opened artifact.  These fields are
+    # deliberately not accepted as an override by register().
+    identity_verified: bool = False
+    activity_claimed: bool = False
 
     def __post_init__(self) -> None:
         cli = normalize_cli(self.cli)
@@ -229,6 +261,15 @@ class ProcessBinding:
             raise ValueError("chat binding requires a stable process_start")
         if self.activity not in {"idle", "busy", "waiting", "unknown", "exited"}:
             raise ValueError("invalid activity state")
+        if type(self.identity_verified) is not bool:
+            raise ValueError("identity_verified must be boolean")
+        if type(self.activity_claimed) is not bool:
+            raise ValueError("activity_claimed must be boolean")
+        # A registration API does not carry a live prompt/event proof.  Keep
+        # any claimed state out of the effective binding so idle cannot be
+        # manufactured from a stale caller value.
+        if self.activity != "unknown" and not self.activity_claimed:
+            raise ValueError("non-unknown activity requires an evidence claim")
         object.__setattr__(self, "cli", cli)
 
 
@@ -242,6 +283,12 @@ class Observation:
     cli_sessions: tuple[ChatEvidence, ...] = ()
     blocked_code: str | None = None
     source: str | None = None
+    # Identity and activity are intentionally reported independently.  A
+    # process-opened transcript can prove a chat UUID while no passive source
+    # proves whether the CLI is waiting, busy, or safe to close.
+    evidence_gap: str | None = None
+    activity_source: str | None = None
+    activity_gap: str | None = None
 
     def as_probe(self) -> dict[str, Any]:
         result: dict[str, Any] = {
@@ -254,6 +301,12 @@ class Observation:
             result["blocked_code"] = self.blocked_code
         if self.source:
             result["identity_source"] = self.source
+        if self.evidence_gap:
+            result["evidence_gap"] = self.evidence_gap
+        if self.activity_source:
+            result["activity_source"] = self.activity_source
+        if self.activity_gap:
+            result["activity_evidence_gap"] = self.activity_gap
         return result
 
 
@@ -334,6 +387,53 @@ def _process_start_and_state(
         return None, None
     # macOS lstart is five tokens after the PID; the final token is state.
     return " ".join(parts[1:6]), parts[6]
+
+
+def _process_command_name(pid: int, runner: Callable[..., bytes]) -> str | None:
+    """Read only the executable name for an optional same-PID exec check."""
+
+    executable = shutil.which("ps") or "/bin/ps"
+    try:
+        raw = runner((executable, "-p", str(pid), "-o", "comm="), timeout=1.0)[:1024]
+    except Exception:
+        return None
+    try:
+        value = raw.decode("utf-8", errors="strict").strip().split(None, 1)[0]
+    except (UnicodeDecodeError, IndexError):
+        return None
+    return Path(value).name or None
+
+
+def _live_process_status(
+    pid: int,
+    expected_start: str | None,
+    runner: Callable[..., bytes],
+    expected_cli: str | None = None,
+) -> Literal["verified", "changed", "exited", "unavailable"]:
+    """Check one PID/start pair without treating missing ``ps`` as success.
+
+    A process start token supplied by a caller is useful only when it can be
+    compared with a fresh process observation.  ``unavailable`` is kept
+    distinct from ``changed`` because a transient ``ps`` failure is an
+    evidence gap, not proof that a process was reused.  Registration paths
+    fail closed for both values; ordinary probes can still use the process
+    provider's already allowlisted identity and expose the gap separately.
+    """
+
+    if type(pid) is not int or pid <= 0 or not isinstance(expected_start, str) or not expected_start:
+        return "unavailable"
+    current_start, state = _process_start_and_state(pid, runner)
+    if current_start is None:
+        return "exited" if not _pid_alive(pid) else "unavailable"
+    if current_start != expected_start:
+        return "changed"
+    if state and state[0].upper() in {"Z", "X"}:
+        return "exited"
+    if expected_cli is not None:
+        current_cli = normalize_cli(_process_command_name(pid, runner))
+        if current_cli is not None and current_cli != normalize_cli(expected_cli):
+            return "changed"
+    return "verified"
 
 
 def _self_and_ancestors(runner: Callable[..., bytes]) -> frozenset[int]:
@@ -681,6 +781,7 @@ def _passive_process_chat(
             persistence_status=persistence,
             resume_executable=executable,
             resume_argv=argv,
+            identity_status="verified" if opened else "startup_only",
         ),
         blocked_code,
     )
@@ -806,7 +907,6 @@ def _cursor_observation(
 
     chat = supplied_chat
     source = "registered_process" if chat is not None else None
-    log_path: Path | None = None
     found_values: list[tuple[str, Path]] = []
     for candidate in _cursor_log_paths(pid, runner):
         for found in _conversation_ids_from_cursor_log(candidate):
@@ -822,18 +922,28 @@ def _cursor_observation(
             source="cursor_pid_log",
         )
     if found_values:
-        found, log_path = found_values[0]
-        if expected_chat_uuid is not None and found != expected_chat_uuid:
+        found, _ = found_values[0]
+        if (
+            expected_chat_uuid is not None
+            and found != expected_chat_uuid
+        ) or (
+            chat is not None
+            and chat.chat_uuid != found
+        ):
             return Observation(
                 activity,
-                "Cursor startup UUID conflicts with the current process log UUID",
+                "Cursor registered/startup UUID conflicts with the current process log UUID",
                 {"pid": pid},
                 (),
                 blocked_code="CLI_IDENTITY_AMBIGUOUS",
                 source="cursor_pid_log",
             )
-        if chat is None:
+        if chat is None or chat.chat_uuid == found:
             meta_cwd, persistence = _cursor_meta(found, cwd, home)
+            # A caller registration is only a candidate.  Once the supplied
+            # PID's current log agrees, replace it with the process-bound
+            # evidence so the distinction survives into receipts and exit
+            # checks.
             chat = ChatEvidence(
                 "cursor",
                 found,
@@ -842,6 +952,7 @@ def _cursor_observation(
                 persistence_status=persistence,
                 resume_executable="cursor-agent",
                 resume_argv=("--resume", found),
+                identity_status="verified",
             )
             source = "cursor_pid_log"
 
@@ -855,12 +966,9 @@ def _cursor_observation(
             source="cursor_pid",
         )
     reason = activity_reason or "Cursor process identity is bound; task activity is not passively exposed"
-    if log_path is not None:
-        try:
-            stat = log_path.stat()
-            reason = f"{reason}; process log metadata mtime={stat.st_mtime_ns} size={stat.st_size}"
-        except OSError:
-            pass
+    # File age/size is intentionally not used as a current-session or idle
+    # signal.  The only identity claim above comes from the log being opened
+    # by this PID and containing one unambiguous classification event.
     return Observation(activity, reason, {"pid": pid}, (chat,), source=source)
 
 
@@ -1008,6 +1116,17 @@ class CliRecoveryAdapter:
                 persistence_status=persistence_status,
                 resume_executable=resume[0],
                 resume_argv=resume[1],
+                identity_status="unverified",
+            )
+        if activity not in {"idle", "busy", "waiting", "unknown", "exited"}:
+            raise ValueError("invalid activity state")
+        activity_claimed = activity != "unknown"
+        if activity_claimed:
+            # Keep the caller's claim visible only as a gap.  It must not be
+            # used as an effective idle/busy state by observe().
+            activity = "unknown"
+            activity_reason = (
+                "registration supplied an activity claim without a live prompt/event proof"
             )
         binding = ProcessBinding(
             session_id=session_id,
@@ -1018,6 +1137,8 @@ class CliRecoveryAdapter:
             process_start=process_start,
             activity=activity,
             activity_reason=activity_reason,
+            identity_verified=False,
+            activity_claimed=activity_claimed,
         )
         self._bindings[session_id] = binding
         return binding
@@ -1051,8 +1172,9 @@ class CliRecoveryAdapter:
             persistence_status=persistence_status,
             resume_executable=resume[0],
             resume_argv=resume[1],
+            identity_status="unverified",
         )
-        replacement = replace(binding, chat=chat)
+        replacement = replace(binding, chat=chat, identity_verified=False)
         self._bindings[session_id] = replacement
         return replacement
 
@@ -1061,6 +1183,58 @@ class CliRecoveryAdapter:
 
     def binding(self, session_id: str) -> ProcessBinding | None:
         return self._bindings.get(session_id)
+
+    def _binding_identity_gap(
+        self, binding: ProcessBinding
+    ) -> tuple[str, str] | None:
+        """Return a diagnostic when a caller registration is not current.
+
+        ``register`` is intentionally a hinting API.  It may remember a UUID
+        for reporting, but it must not turn arbitrary PID/UUID input into an
+        interrupt-capable identity.  A fresh PID/start comparison is required
+        before a registered chat is considered verified.  The check is only
+        applied to registered bindings; the closing backend's process
+        provider already supplies the allowlisted identity for an unregistered
+        passive observation.
+        """
+
+        if binding.chat is None:
+            return None
+        if not isinstance(binding.process_start, str) or not binding.process_start:
+            return (
+                "PROCESS_IDENTITY_MISSING",
+                "registered chat has no stable process start token",
+            )
+        status = _live_process_status(
+            binding.pid,
+            binding.process_start,
+            self.runner,
+            expected_cli=binding.cli,
+        )
+        if status == "verified":
+            return None
+        if status == "changed":
+            return (
+                "PROCESS_IDENTITY_CHANGED",
+                "registered PID is no longer the same process instance",
+            )
+        if status == "exited":
+            return ("CLI_IDENTITY_EXPIRED", "registered process instance has exited")
+        return (
+            "PROCESS_IDENTITY_UNVERIFIED",
+            "current process start token could not be verified",
+        )
+
+    @staticmethod
+    def _registration_activity_gap(binding: ProcessBinding) -> tuple[str, str] | None:
+        """Describe an activity claim that has no live prompt/event proof."""
+
+        if not binding.activity_claimed:
+            return None
+        return (
+            "ACTIVITY_EVIDENCE_UNVERIFIED",
+            "registration does not provide a current prompt or lifecycle event",
+        )
 
     @staticmethod
     def _context_value(row: Mapping[str, Any], name: str) -> Any:
@@ -1180,9 +1354,54 @@ class CliRecoveryAdapter:
         yields an exception and the caller retains the terminal.
         """
 
-        cli_sessions = probe.get("cli_sessions") if isinstance(probe, Mapping) else None
+        if not isinstance(probe, Mapping):
+            raise RuntimeError("CLI identity evidence is unavailable")
+        blocked_code = probe.get("blocked_code")
+        if isinstance(blocked_code, str) and blocked_code in _IDENTITY_BLOCK_CODES:
+            raise RuntimeError(f"CLI identity evidence is blocked: {blocked_code}")
+        cli_sessions = probe.get("cli_sessions")
         if not isinstance(cli_sessions, Sequence) or isinstance(cli_sessions, (str, bytes)) or not cli_sessions:
             raise RuntimeError("CLI identity is required before exit")
+        session_id = row.get("session_id") if isinstance(row, Mapping) else None
+        binding = self._bindings.get(session_id) if isinstance(session_id, str) else None
+        if binding is not None and binding.chat is not None:
+            verified_probe_chat = any(
+                isinstance(item, Mapping) and item.get("identity_status") == "verified"
+                for item in cli_sessions
+            )
+            if not verified_probe_chat:
+                # The public closing normalizer intentionally keeps only the
+                # safe chat fields and may drop ``identity_status``.  Re-read
+                # the current process-bound artifact rather than trusting the
+                # normalized UUID or a cached registration.
+                refreshed = self.observe(
+                    session_id,
+                    cli=binding.cli,
+                    pid=binding.pid,
+                    cwd=binding.cwd,
+                    process_start=binding.process_start,
+                )
+                refreshed_verified = any(
+                    chat.identity_status == "verified"
+                    for chat in refreshed.cli_sessions
+                )
+                refreshed_ids = {
+                    chat.chat_uuid for chat in refreshed.cli_sessions
+                }
+                probe_ids = {
+                    item.get("chat_uuid")
+                    for item in cli_sessions
+                    if isinstance(item, Mapping) and isinstance(item.get("chat_uuid"), str)
+                }
+                if (
+                    refreshed.blocked_code
+                    or not refreshed_verified
+                    or not probe_ids
+                    or refreshed_ids != probe_ids
+                ):
+                    raise RuntimeError(
+                        "registered CLI identity was not verified by current process evidence"
+                    )
         identity = probe.get("identity") if isinstance(probe, Mapping) else None
         if not isinstance(identity, Mapping):
             raise RuntimeError("stable process identity is required before exit")
@@ -1272,6 +1491,10 @@ class CliRecoveryAdapter:
         """
 
         binding = self._bindings.get(session_id)
+        binding_identity_gap = self._binding_identity_gap(binding) if binding is not None else None
+        binding_activity_gap = (
+            self._registration_activity_gap(binding) if binding is not None else None
+        )
         normalized_cli = normalize_cli(cli) if cli is not None else None
         if binding is not None:
             if (pid is not None and pid != binding.pid) or (
@@ -1334,9 +1557,80 @@ class CliRecoveryAdapter:
                 blocked_code="PROCESS_IDENTITY_MISSING",
                 source="cli_context",
             )
+        activity_gap = binding_activity_gap
+        if activity is not None and activity not in {
+            "idle",
+            "busy",
+            "waiting",
+            "unknown",
+            "exited",
+        }:
+            raise ValueError("invalid activity state")
         selected_activity = activity if activity is not None else bound_activity
         selected_reason = activity_reason or bound_reason
+        if activity is not None and activity != "unknown":
+            # A direct state argument is a claim, not a live lifecycle
+            # observation.  Keep it out of the effective state until a prompt
+            # reader or CLI hook supplies evidence.
+            selected_activity = "unknown"
+            selected_reason = "caller activity claim has no live prompt/event evidence"
+            activity_gap = (
+                "ACTIVITY_EVIDENCE_UNVERIFIED",
+                "observe() was given an activity claim without a live evidence source",
+            )
         registered_chat = supplied_chat
+
+        def finish(observation: Observation) -> Observation:
+            """Attach registration/activity gaps without hiding stronger ones."""
+
+            blocked = observation.blocked_code
+            gap = observation.evidence_gap
+            if binding_identity_gap is not None and blocked is None:
+                blocked, reason = binding_identity_gap
+                gap = gap or reason
+            observed_verified_chat = any(
+                chat.identity_status == "verified" for chat in observation.cli_sessions
+            )
+            if (
+                supplied_chat is not None
+                and supplied_chat.identity_status != "verified"
+                and not observed_verified_chat
+            ):
+                if blocked is None:
+                    blocked = "CLI_IDENTITY_UNVERIFIED"
+                gap = gap or "registered UUID has not been matched to current process metadata"
+            if activity_gap is not None:
+                if blocked is None:
+                    blocked = activity_gap[0]
+                gap = gap or activity_gap[1]
+            activity_reason_value = (
+                activity_gap[1] if activity_gap is not None else observation.activity_gap
+            )
+            activity_source_value = (
+                "caller_claim"
+                if activity_gap is not None
+                else observation.activity_source
+            )
+            if activity_source_value is None and observation.state != "exited":
+                activity_source_value = "unavailable"
+                if activity_reason_value is None and observation.state == "unknown":
+                    activity_reason_value = (
+                        "CLI provider exposes no current task lifecycle evidence"
+                    )
+            if (
+                blocked == observation.blocked_code
+                and gap == observation.evidence_gap
+                and activity_reason_value == observation.activity_gap
+                and activity_source_value == observation.activity_source
+            ):
+                return observation
+            return replace(
+                observation,
+                blocked_code=blocked,
+                evidence_gap=gap,
+                activity_source=activity_source_value,
+                activity_gap=activity_reason_value,
+            )
         passive_chat, passive_error = _passive_process_chat(
             cli=normalized_cli,
             pid=pid,
@@ -1348,7 +1642,7 @@ class CliRecoveryAdapter:
                 passive_chat is not None
                 and passive_chat.chat_uuid != supplied_chat.chat_uuid
             ):
-                return _require_process_start(
+                return finish(_require_process_start(
                     _with_process_identity(
                         Observation(
                             selected_activity,
@@ -1357,16 +1651,27 @@ class CliRecoveryAdapter:
                             (supplied_chat,),
                             blocked_code="CLI_IDENTITY_AMBIGUOUS",
                             source="process_metadata",
+                            evidence_gap="current process metadata disagrees with the registered UUID",
                         ),
                         pid,
                         process_start,
                     ),
                     process_start,
-                )
+                ))
+            if passive_chat is not None and passive_chat.chat_uuid == supplied_chat.chat_uuid:
+                # Replace a caller registration with the stronger current
+                # process-opened proof.  This also handles a chat switch back
+                # to the registered UUID without retaining startup-only
+                # provenance.
+                supplied_chat = passive_chat
+                registered_chat = passive_chat
+                # Do not cache this as a verified binding.  File-open/log
+                # evidence is a point-in-time observation; a later session
+                # switch in the same PID must not inherit the old UUID.
         elif passive_chat is not None:
             supplied_chat = passive_chat
         if normalized_cli in {"claude", "codex", "kiro"} and passive_error is not None:
-            return _require_process_start(
+            return finish(_require_process_start(
                 _with_process_identity(
                     Observation(
                         selected_activity,
@@ -1379,12 +1684,17 @@ class CliRecoveryAdapter:
                         (supplied_chat,) if supplied_chat is not None else (),
                         blocked_code=passive_error,
                         source="process_metadata",
+                        evidence_gap=(
+                            "multiple process-bound chat UUIDs were observed"
+                            if passive_error == "CLI_IDENTITY_AMBIGUOUS"
+                            else "startup UUID lacks a current process-opened session artifact"
+                        ),
                     ),
                     pid,
                     process_start,
                 ),
                 process_start,
-            )
+            ))
         if normalized_cli == "cursor":
             current = _cursor_observation(
                 pid=pid,
@@ -1397,9 +1707,9 @@ class CliRecoveryAdapter:
                 activity_reason=selected_reason,
             )
             if current.cli_sessions:
-                return _require_process_start(
+                return finish(_require_process_start(
                     _with_process_identity(current, pid, process_start), process_start
-                )
+                ))
             if (
                 passive_chat is not None
                 and passive_error == "CLI_IDENTITY_STARTUP_ONLY"
@@ -1413,14 +1723,19 @@ class CliRecoveryAdapter:
                     (passive_chat,),
                     blocked_code=passive_error,
                     source="process_argv_startup",
+                    evidence_gap="startup UUID lacks a current Cursor log artifact",
                 )
             elif passive_error is not None and current.blocked_code is None:
-                current = replace(current, blocked_code=passive_error)
-            return _require_process_start(
+                current = replace(
+                    current,
+                    blocked_code=passive_error,
+                    evidence_gap="current Cursor log evidence is unavailable",
+                )
+            return finish(_require_process_start(
                 _with_process_identity(current, pid, process_start), process_start
-            )
+            ))
         if normalized_cli == "kiro":
-            return _require_process_start(
+            return finish(_require_process_start(
                 _with_process_identity(
                     _kiro_observation(
                         pid=pid,
@@ -1434,35 +1749,37 @@ class CliRecoveryAdapter:
                     process_start,
                 ),
                 process_start,
-            )
+            ))
         identity = _process_identity(pid, process_start)
         if not _pid_alive(pid):
-            return Observation("exited", "the bound CLI process is no longer alive", identity, (), source="pid")
+            return finish(Observation("exited", "the bound CLI process is no longer alive", identity, (), source="pid"))
         if supplied_chat is None:
-            return Observation(
+            return finish(Observation(
                 selected_activity,
                 selected_reason or f"{normalized_cli} has no passive foreground chat-id API",
                 identity,
                 (),
                 blocked_code="CLI_IDENTITY_MISSING",
                 source=f"{normalized_cli}_pid",
-            )
-        return _require_process_start(
+                evidence_gap=f"{normalized_cli} exposes no process-bound foreground chat-id API",
+            ))
+        return finish(_require_process_start(
             Observation(
                 selected_activity,
                 selected_reason,
                 identity,
                 (supplied_chat,),
-                source="registered_process",
+                source=supplied_chat.identity_source,
             ),
             process_start,
-        )
+        ))
 
 
 __all__ = [
     "Activity",
     "ChatEvidence",
     "CliRecoveryAdapter",
+    "IdentityStatus",
     "Observation",
     "ProcessBinding",
     "SUPPORTED_CLIS",

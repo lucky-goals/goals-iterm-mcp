@@ -21,7 +21,7 @@ goals-iterm-mcp 透過 **iTerm2 Python API**，將支援 MCP 的 Agent 與電腦
 
 > 持續指導專案專用 iTerm 工作階段中的 Coding CLI，直到它完成登入問題的診斷、修復，並通過相關測試。每個階段檢查進度，必要時補充後續指令，最後依照完成條件核對結果。不要重複提交仍在執行的任務；遇到超出本次範圍的決策時詢問我，完成後彙整變更與測試結果。
 
-儲存庫原始碼的 `serve` 入口提供 12 個 stdio MCP 工具：原有的工作階段列舉、終端機讀寫、視窗與分頁建立、工作階段命名工具，加上 4 個關閉工具。0.2.0 版本包含全部 12 個工具，包括下方的 4 個關閉工具。原始碼契約見[關閉工具實作規範](docs/closing-tools-spec.md)。
+已發布的 0.2.0 套件提供 12 個 stdio MCP 工具：原有的工作階段列舉、終端機讀寫、視窗與分頁建立、工作階段命名工具，加上 4 個關閉工具。`main` 分支目前還包含一個尚未發布的唯讀增量工具 `inspect_sessions`，因此目前原始碼共 13 個工具；它不屬於 PyPI 0.2.0。原始碼契約及 main 專屬稽核說明見[關閉工具實作規範](docs/closing-tools-spec.md)。
 
 ## 前置設定
 
@@ -113,7 +113,7 @@ git pull --ff-only
 
 依用戶端支援的方式重新啟動或連接 `iterm` MCP，必要時重新啟動用戶端。更新磁碟檔案不會替換已執行的服務程序。Codex 可使用 **設定 → MCP servers → Restart**，或重新啟動 Codex；參見 [官方 MCP 設定說明](https://learn.chatgpt.com/docs/extend/mcp?surface=cli)。
 
-重新連線後，查詢目前用戶端實際載入的工具列表，並僅呼叫 `list_sessions` 驗證連線。工具列表應符合安裝版本；0.2.0 版本應有 12 個工具，包括 `close_session`、`close_tab`、`close_window`、`clean_all_sessions`。獨立程序握手成功不代表既有對話已刷新工具；若仍顯示舊介面，重新連線或開啟新對話後再檢查。升級驗收不需要建立、關閉終端或傳送輸入。啟動 Python 時禁止使用 `--reload`。
+重新連線後，查詢目前用戶端實際載入的工具列表，並僅呼叫 `list_sessions` 驗證連線。工具列表應符合安裝版本；0.2.0 版本應有 12 個工具，包括 `close_session`、`close_tab`、`close_window`、`clean_all_sessions`。若使用 `main` 分支原始碼，可能額外看到尚未發布的唯讀 `inspect_sessions`（共 13 個工具）；不要把該原始碼增量當成 PyPI 0.2.0 的一部分。獨立程序握手成功不代表既有對話已刷新工具；若仍顯示舊介面，重新連線或開啟新對話後再檢查。升級驗收不需要建立、關閉終端或傳送輸入。啟動 Python 時禁止使用 `--reload`。
 
 也可以將以下提示詞交給本機 Agent：
 
@@ -155,7 +155,7 @@ MCP 用戶端設定範例（請替換為你的絕對路徑）：
 
 選用參數：
 
-- `--read-only`：僅提供 3 個唯讀工具：`list_sessions`、`read_screen` 與 `read_history`。
+- `--read-only`：已發布的 0.2.0 套件僅提供 3 個唯讀工具：`list_sessions`、`read_screen` 與 `read_history`。使用 `main` 分支原始碼時，還會額外提供尚未發布的唯讀工具 `inspect_sessions`。
 - `--session-id <ID>`：限制為指定工作階段，可重複傳入以允許多個工作階段。啟用後禁止建立視窗與分頁。
 
 預設可操作目前使用者 iTerm 中的所有工作階段。讀取與傳送操作必須傳入 `list_sessions` 回傳的精確 `session_id`；關閉工具也支援下方說明的明確選擇器。不會依焦點、萬用字元、前綴或標題推測目標。
@@ -167,6 +167,7 @@ MCP 用戶端設定範例（請替換為你的絕對路徑）：
 | `list_sessions` | 無 | 列出工作階段、分頁、視窗 ID、可讀的 `name` 與工作階段中繼資料。 |
 | `read_screen` | `session_id` | 讀取已呈現的畫面行、尺寸與游標位置。 |
 | `read_history` | `session_id`, `lines=100` | 讀取保留的捲動歷史，最多 2,000 行。 |
+| `inspect_sessions` | `session_id=None`、`nickname=None` | **僅限 main 的未發布增量。** 唯讀清理能力稽核。可選擇一個精確工作階段 ID 或唯一的不分大小寫暱稱，也可以省略兩者以檢查全部已授權可見工作階段。回報有限的 prompt/process/CLI 證據、活動、身分與持久化觀察、阻礙、處置建議及提示性的關閉就緒狀態；不提供任務授權或關閉授權，也不會傳送輸入、退出 CLI、寫入回執或關閉工作階段。 |
 | `send_text` | `session_id`, `text` | 原樣傳送文字，最多 16 KiB，不自動附加換行。 |
 | `send_keys` | `session_id`, `key` | 傳送一個終端機按鍵序列。 |
 | `create_window` | `command`（選用） | 使用預設設定檔建立視窗，可指定啟動命令，回傳新目標 ID。 |
@@ -176,6 +177,12 @@ MCP 用戶端設定範例（請替換為你的絕對路徑）：
 | `close_tab` | `tab_id=None`、`session_id=None`、`nickname=None`、`force=False`、`dry_run=False` | 關閉選定工作階段或分頁所在的分頁。必須提供且只能提供一個選擇器。 |
 | `close_window` | `window_id=None`、`session_id=None`、`nickname=None`、`force=False`、`dry_run=False` | 關閉選定工作階段或視窗所在的視窗。必須提供且只能提供一個選擇器。 |
 | `clean_all_sessions` | `force=False`、`dry_run=False` | 依初始工作階段快照清理允許範圍內的工作階段。預設跳過忙碌、未知或無法復原的工作階段；`force=true` 會嘗試快照中的每個允許工作階段。 |
+
+### 唯讀工作階段能力稽核
+
+`inspect_sessions` 是目前 `main` 原始碼中的唯讀診斷工具，屬於尚未發布的增量，不包含在已發布的 0.2.0 套件中。`session_id` 與 `nickname` 互斥。傳入精確 `session_id` 或唯一暱稱（去除前後空白並折疊大小寫）時檢查一個已授權工作階段；省略兩者時檢查目前全部已授權可見工作階段。選擇器無效、有歧義、不可用或超出授權範圍時，工具會在不寫入終端的情況下失敗。
+
+每項結果包含工作階段、分頁與視窗身分，以及有限的 `prompt`、`process`、`cli`、`terminal_activity`、`business_acceptance` 和 `close_readiness` 部分。診斷可能回報證據是否可用、觀測到的活動、穩定進程/CLI 身分、聊天持久化觀察、阻礙代碼和處置建議。`business_acceptance` 始終為 `not_observed`；`close_readiness` 僅供參考，其 `status` 為 `eligible_if_unchanged`、`blocked` 或 `unknown`，只有前者對應 `ready=true`。即使結果為 `ready: true`，也不代表取得授權或關閉一定成功；任何生命週期寫入前都必須重新探測。該工具只讀取證據，不會傳送終端輸入、退出 CLI、保存恢復回執或呼叫原生關閉。
 
 ### 關閉工具
 

@@ -40,9 +40,56 @@ class DirectTests(unittest.IsolatedAsyncioTestCase):
 
     async def test_tool_surface_and_read_only(self):
         tools = await build_server(ItermTools(backend())).list_tools()
-        self.assertEqual({t.name for t in tools}, {"list_sessions", "read_screen", "read_history", "send_text", "send_keys", "rename_session", "create_window", "create_tab", "close_session", "close_tab", "close_window", "clean_all_sessions"})
+        self.assertEqual({t.name for t in tools}, {"list_sessions", "read_screen", "read_history", "inspect_sessions", "send_text", "send_keys", "rename_session", "create_window", "create_tab", "close_session", "close_tab", "close_window", "clean_all_sessions"})
         reads = await build_server(ItermTools(backend()), read_only=True).list_tools()
-        self.assertEqual({t.name for t in reads}, {"list_sessions", "read_screen", "read_history"})
+        self.assertEqual({t.name for t in reads}, {"list_sessions", "read_screen", "read_history", "inspect_sessions"})
+
+    async def test_inspect_sessions_is_read_only_and_respects_allowlist(self):
+        from goals_iterm_mcp.closing_backend import ClosingBackend
+        from tests.test_closing_backend import FakeBackend, ProcessEvidence, Prompt, make_row
+
+        rows = [make_row("s1"), make_row("s2")]
+        rows[0]["name"] = "Alpha"
+        rows[1]["name"] = "Beta"
+        fake = FakeBackend(rows)
+        closing = ClosingBackend(
+            fake,
+            process_provider=ProcessEvidence(),
+            prompt_reader=lambda row: Prompt(),
+        )
+        service = ItermTools(fake, session_ids=["s1"], closing_backend=closing)
+
+        all_visible = await service.inspect_sessions()
+        self.assertEqual([item["session_id"] for item in all_visible["sessions"]], ["s1"])
+        selected = await service.inspect_sessions(nickname=" alpha ")
+        self.assertEqual(selected["sessions"][0]["session_id"], "s1")
+        self.assertTrue(selected["sessions"][0]["close_readiness"]["advisory"])
+        self.assertEqual(fake.native.close_calls, [])
+        self.assertEqual({item["session_id"] for item in fake.rows}, {"s1", "s2"})
+
+        with self.assertRaises(ToolError):
+            await service.inspect_sessions(session_id="s1", nickname="Alpha")
+        with self.assertRaises(ToolError):
+            await service.inspect_sessions(session_id="s2")
+
+    async def test_inspect_sessions_rejects_ambiguous_nickname(self):
+        from goals_iterm_mcp.closing_backend import ClosingBackend
+        from tests.test_closing_backend import FakeBackend, ProcessEvidence, Prompt, make_row
+
+        rows = [make_row("s1"), make_row("s2")]
+        rows[0]["name"] = "Alpha"
+        rows[1]["name"] = " alpha "
+        fake = FakeBackend(rows)
+        service = ItermTools(
+            fake,
+            closing_backend=ClosingBackend(
+                fake,
+                process_provider=ProcessEvidence(),
+                prompt_reader=lambda row: Prompt(),
+            ),
+        )
+        with self.assertRaises(ToolError):
+            await service.inspect_sessions(nickname="ALPHA")
 
     async def test_exact_text_no_newline_added(self):
         fake = backend()
@@ -172,7 +219,7 @@ build_server(ItermTools(fake)).run()
         async with stdio_client(StdioServerParameters(command=sys.executable, args=["-c", code])) as streams:
             async with ClientSession(*streams) as client:
                 await client.initialize()
-                self.assertEqual(len((await client.list_tools()).tools), 12)
+                self.assertEqual(len((await client.list_tools()).tools), 13)
                 result = await client.call_tool("read_screen", {"session_id": "session-1"})
                 self.assertFalse(result.isError)
                 self.assertEqual(result.structuredContent["screen"]["lines"][0]["text"], "界😀")

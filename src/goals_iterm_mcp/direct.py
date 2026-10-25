@@ -5,6 +5,7 @@ import asyncio
 from collections.abc import Mapping
 from contextlib import asynccontextmanager, redirect_stdout
 import importlib
+import inspect
 import json
 import sys
 from typing import Any, Literal
@@ -270,6 +271,92 @@ class ItermTools:
             result.append(item)
         return result
 
+    async def inspect_sessions(
+        self,
+        session_id: str | None = None,
+        nickname: str | None = None,
+    ) -> dict[str, Any]:
+        """Return advisory, read-only cleanup evidence for visible sessions.
+
+        This deliberately calls only the closing backend's snapshot/probe
+        path. It never runs CloseService, persists a receipt, sends terminal
+        input, exits a CLI, or invokes native close.
+        """
+
+        if session_id is not None and nickname is not None:
+            raise ToolError("SELECTOR_CONFLICT")
+        rows = await self._all_rows()
+        visible = [row for row in rows if self.allowed is None or row["session_id"] in self.allowed]
+        if session_id is not None:
+            selected = [await self._target_row(session_id, rows)]
+        elif nickname is not None:
+            if not isinstance(nickname, str) or not nickname.strip():
+                raise ToolError("INVALID_SELECTOR")
+            wanted = nickname.strip().casefold()
+            matches = [
+                row
+                for row in visible
+                if isinstance(row.get("name"), str)
+                and row["name"].strip().casefold() == wanted
+            ]
+            if len(matches) > 1:
+                raise ToolError("AMBIGUOUS_SELECTOR")
+            if not matches:
+                raise ToolError("SESSION_NOT_FOUND")
+            selected = matches
+        else:
+            selected = visible
+
+        from .closing_backend import ClosingBackend
+
+        adapter = self._closing_backend
+        if adapter is None:
+            adapter = ClosingBackend(self.backend, allowed=self.allowed)
+            self._closing_backend = adapter
+        probe_method = getattr(adapter, "probe", None)
+        diagnostics: list[dict[str, Any]] = []
+        for row in selected:
+            if not callable(probe_method):
+                probe = {
+                    "state": "unknown",
+                    "reason": "probe_unavailable",
+                    "identity": None,
+                    "cli_sessions": [],
+                    "blocked_code": "PROBE_UNAVAILABLE",
+                }
+                detail = ClosingBackend.diagnostic(row, probe)
+                detail["probe_error"] = "PROBE_UNAVAILABLE"
+                diagnostics.append(detail)
+                continue
+            try:
+                value = probe_method(row)
+                probe = await value if inspect.isawaitable(value) else value
+            except asyncio.CancelledError:
+                raise
+            except Exception:
+                # Do not reflect adapter exception text, paths, argv, or log
+                # data through the read-only diagnostic surface.
+                probe = {
+                    "state": "unknown",
+                    "reason": "probe_unavailable",
+                    "identity": None,
+                    "cli_sessions": [],
+                    "blocked_code": "PROBE_UNAVAILABLE",
+                }
+                detail = ClosingBackend.diagnostic(row, probe)
+                detail["probe_error"] = "PROBE_UNAVAILABLE"
+                diagnostics.append(detail)
+                continue
+            diagnostics.append(ClosingBackend.diagnostic(row, probe))
+        return {
+            "sessions": diagnostics,
+            "observation": (
+                "Advisory read-only evidence only; it is not authorization, "
+                "business completion, or a close/exit commitment. Re-probe "
+                "immediately before any lifecycle write."
+            ),
+        }
+
     async def catalogue(self):
         rows = await self._all_rows()
         return [row for row in rows if self.allowed is None or row["session_id"] in self.allowed]
@@ -407,6 +494,20 @@ def build_server(service: ItermTools | None = None, *, read_only: bool = False) 
     async def read_history(session_id: str, lines: int = 100) -> dict[str, Any]:
         """Read up to 2000 rendered scrollback lines, not raw process output."""
         return await service.invoke(service.history, session_id, lines)
+
+    @server.tool(annotations=read)
+    async def inspect_sessions(
+        session_id: str | None = None, nickname: str | None = None
+    ) -> dict[str, Any]:
+        """Inspect cleanup evidence without sending input, exiting, or closing.
+
+        Select one exact session ID, one exact case-folded nickname, or omit
+        selectors to inspect all authorized sessions. Results are advisory:
+        terminal activity, CLI recovery evidence, and process identity are
+        rechecked before any lifecycle write, and business completion is not
+        observed by this tool.
+        """
+        return await service.invoke(service.inspect_sessions, session_id, nickname)
 
     if not read_only:
         @server.tool(annotations=write)

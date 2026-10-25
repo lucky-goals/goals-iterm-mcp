@@ -185,6 +185,72 @@ class ClosingBackendTests(unittest.IsolatedAsyncioTestCase):
         _, adapter = self._backend(prompt=lambda row: None)
         probe = await adapter.probe((await adapter.snapshot())[0])
         self.assertEqual(probe["state"], "unknown")
+        self.assertEqual(probe["reason"], "prompt_unavailable")
+        self.assertFalse(probe["prompt"]["available"])
+
+    async def test_unknown_prompt_with_active_process_is_busy(self):
+        _, adapter = self._backend(
+            process=ProcessEvidence(active_jobs=[{"pid": 99}]),
+            prompt=lambda row: None,
+        )
+        probe = await adapter.probe((await adapter.snapshot())[0])
+        self.assertEqual(probe["state"], "busy")
+        self.assertEqual(probe["reason"], "active_job_on_tty")
+        self.assertEqual(probe["prompt"]["reason"], "prompt_unavailable")
+
+    async def test_process_provider_none_is_explicitly_unavailable(self):
+        _, adapter = self._backend(process=lambda row: None)
+        probe = await adapter.probe((await adapter.snapshot())[0])
+        self.assertEqual(probe["state"], "unknown")
+        self.assertEqual(probe["reason"], "process_inspection_unavailable")
+        diagnostic = adapter.diagnostic((await adapter.snapshot())[0], probe)
+        self.assertIs(diagnostic["process"]["available"], False)
+        self.assertEqual(diagnostic["process"]["reason"], "process_inspection_unavailable")
+
+    async def test_diagnostic_projection_omits_resume_argv_and_raw_reasons(self):
+        backend = FakeBackend([make_row()])
+
+        class CliAdapter:
+            def probe(self, row, process):
+                return {
+                    "state": "busy",
+                    "reason": "secret command and environment",
+                    "identity": {"pid": 200, "start": "cli-start"},
+                    "identity_source": "claude_pid",
+                    "activity_evidence_gap": "CLI provider exposes no current task lifecycle evidence",
+                    "blocked_code": "SECRET / raw adapter detail",
+                    "cli_sessions": [
+                        {
+                            "cli": "codex",
+                            "chat_uuid": "12345678-1234-4234-8234-123456789abc",
+                            "identity_source": "process_open_file",
+                            "persistence_status": "saved",
+                            "resume": {"argv": ["--secret-token"]},
+                        }
+                    ],
+                }
+
+        adapter = ClosingBackend(
+            backend,
+            cli_adapter=CliAdapter(),
+            process_provider=ProcessEvidence(),
+            prompt_reader=lambda row: Prompt(),
+        )
+        row = (await adapter.snapshot())[0]
+        probe = await adapter.probe(row)
+        diagnostic = adapter.diagnostic(row, probe)
+        self.assertEqual(diagnostic["cli"]["activity"]["state"], "busy")
+        self.assertEqual(diagnostic["cli"]["identity_source"], "claude_pid")
+        self.assertEqual(
+            diagnostic["cli"]["activity"]["evidence_gap"],
+            "ACTIVITY_EVIDENCE_UNAVAILABLE",
+        )
+        self.assertEqual(diagnostic["cli"]["blocked_code"], "PROBE_UNAVAILABLE")
+        self.assertEqual(diagnostic["close_readiness"]["status"], "blocked")
+        self.assertFalse(diagnostic["close_readiness"]["ready"])
+        self.assertNotIn("SECRET", str(diagnostic))
+        self.assertNotIn("resume", str(diagnostic))
+        self.assertNotIn("secret", str(diagnostic))
 
     async def test_probe_reads_process_binding_variables_from_exact_session(self):
         row = make_row()

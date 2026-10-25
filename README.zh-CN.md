@@ -21,7 +21,7 @@ goals-iterm-mcp 通过 **iTerm2 Python API**，把支持 MCP 的 Agent 与电脑
 
 > 持续指导项目专用 iTerm 会话中的 Coding CLI，直到它完成登录问题的诊断、修复，并通过相关测试。每个阶段检查进度，必要时补充后续指令，最后按这些完成条件核对结果。不要重复提交仍在执行的任务；遇到超出本次范围的决策时询问我，完成后汇总改动和测试结果。
 
-仓库源码的 `serve` 入口提供 12 个 stdio MCP 工具：原有的会话枚举、终端读写、窗口和标签页创建、会话命名工具，加上 4 个关闭工具。0.2.0 版本包含全部 12 个工具，包括下面的 4 个关闭工具。源码契约见[关闭工具实现规范](docs/closing-tools-spec.md)。
+已发布的 0.2.0 包提供 12 个 stdio MCP 工具：原有的会话枚举、终端读写、窗口和标签页创建、会话命名工具，加上 4 个关闭工具。`main` 分支当前还包含一个尚未发布的只读增量工具 `inspect_sessions`，因此当前源码共 13 个工具；它不属于 PyPI 0.2.0。源码契约及 main 专属审计说明见[关闭工具实现规范](docs/closing-tools-spec.md)。
 
 ## 前置配置
 
@@ -113,7 +113,7 @@ git pull --ff-only
 
 按客户端支持的方式重启或重新连接 `iterm` MCP；必要时重启客户端。更新磁盘文件不会替换已经运行的服务进程。Codex 可在 **设置 → MCP servers → Restart** 重启连接，或重启 Codex，参见 [官方 MCP 配置说明](https://learn.chatgpt.com/docs/extend/mcp?surface=cli)。
 
-重连后，查询当前客户端实际加载的工具列表，并仅调用 `list_sessions` 验证连接。工具列表应与安装版本一致；0.2.0 版本应有 12 个工具，包含 `close_session`、`close_tab`、`close_window`、`clean_all_sessions`。独立进程握手成功不代表已有对话已经刷新工具；如果仍只显示旧接口，重连或新建对话后再次检查。升级验收不需要创建、关闭终端或发送输入。启动 Python 时禁止使用 `--reload`。
+重连后，查询当前客户端实际加载的工具列表，并仅调用 `list_sessions` 验证连接。工具列表应与安装版本一致；0.2.0 版本应有 12 个工具，包含 `close_session`、`close_tab`、`close_window`、`clean_all_sessions`。如果使用 `main` 分支源码，可能额外看到尚未发布的只读 `inspect_sessions`（共 13 个工具）；不要把该源码增量当成 PyPI 0.2.0 的一部分。独立进程握手成功不代表已有对话已经刷新工具；如果仍只显示旧接口，重连或新建对话后再次检查。升级验收不需要创建、关闭终端或发送输入。启动 Python 时禁止使用 `--reload`。
 
 也可以复制下面的提示词交给本机 Agent：
 
@@ -155,7 +155,7 @@ MCP 客户端配置示例（替换为你的绝对路径）：
 
 可选参数：
 
-- `--read-only`：只暴露 3 个只读工具：`list_sessions`、`read_screen` 和 `read_history`。
+- `--read-only`：已发布的 0.2.0 包只暴露 3 个只读工具：`list_sessions`、`read_screen` 和 `read_history`。使用 `main` 分支源码时，还会额外暴露尚未发布的只读工具 `inspect_sessions`。
 - `--session-id <ID>`：限制为指定会话，可重复传入。启用后禁止创建窗口/标签页，避免扩大访问范围。
 
 默认可以操作当前用户 iTerm 中的全部会话。读取和发送操作必须传入 `list_sessions` 返回的准确 `session_id`；关闭工具还支持下面说明的明确选择器。不通过焦点、通配符、前缀或标题猜测目标。
@@ -167,6 +167,7 @@ MCP 客户端配置示例（替换为你的绝对路径）：
 | `list_sessions` | 无 | 枚举 session、tab、window ID、可读的 `name` 和会话元数据 |
 | `read_screen` | `session_id` | 读取屏幕行、尺寸和光标位置 |
 | `read_history` | `session_id`, `lines=100` | 读取最近的保留滚动历史，最多 2000 行 |
+| `inspect_sessions` | `session_id=None`、`nickname=None` | **仅限 main 的未发布增量。** 只读清理能力审计。可选择一个精确会话 ID 或唯一的忽略大小写昵称，也可以省略二者以检查全部授权可见会话。报告有限的 prompt/process/CLI 证据、活动、身份与持久化观察、阻碍、处置建议及提示性的关闭就绪状态；不提供任务授权或关闭授权，也不会发送输入、退出 CLI、写入回执或关闭会话。 |
 | `send_text` | `session_id`, `text` | 原样发送文本，最多 16 KiB，不自动追加换行 |
 | `send_keys` | `session_id`, `key` | 发送一个终端按键序列 |
 | `create_window` | `command`（可选） | 新建默认 profile 窗口，可指定启动命令，返回新目标 ID |
@@ -176,6 +177,12 @@ MCP 客户端配置示例（替换为你的绝对路径）：
 | `close_tab` | `tab_id=None`、`session_id=None`、`nickname=None`、`force=False`、`dry_run=False` | 关闭选定会话或标签页所在的标签页。必须提供且只能提供一个选择器。 |
 | `close_window` | `window_id=None`、`session_id=None`、`nickname=None`、`force=False`、`dry_run=False` | 关闭选定会话或窗口所在的窗口。必须提供且只能提供一个选择器。 |
 | `clean_all_sessions` | `force=False`、`dry_run=False` | 根据初始会话快照清理允许范围内的会话。默认跳过忙碌、未知或无法恢复的会话；`force=true` 会尝试该快照中的每个允许会话。 |
+
+### 只读会话能力审计
+
+`inspect_sessions` 是当前 `main` 源码中的只读诊断工具，属于尚未发布的增量，不包含在已发布的 0.2.0 包中。`session_id` 与 `nickname` 互斥。传入精确 `session_id` 或唯一昵称（去除首尾空白并折叠大小写）时检查一个授权会话；省略二者时检查当前授权可见的全部会话。选择器无效、有歧义、不可用或超出授权范围时，工具在不写入终端的情况下失败。
+
+每项结果包含会话、标签页和窗口身份，以及有限的 `prompt`、`process`、`cli`、`terminal_activity`、`business_acceptance` 和 `close_readiness` 部分。诊断可能报告证据是否可用、观测到的活动、稳定进程/CLI 身份、聊天持久化观察、阻碍代码和处置建议。`business_acceptance` 始终为 `not_observed`；`close_readiness` 仅供参考，其 `status` 为 `eligible_if_unchanged`、`blocked` 或 `unknown`，只有前者对应 `ready=true`。即使结果为 `ready: true`，也不代表获得授权或关闭一定成功；任何生命周期写入前都必须重新探测。该工具只读取证据，不会发送终端输入、退出 CLI、保存恢复回执或调用原生关闭。
 
 ### 关闭工具
 

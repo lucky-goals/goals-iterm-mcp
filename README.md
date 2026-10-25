@@ -21,7 +21,7 @@ For example, give the supervising agent this goal:
 
 > Guide the coding CLI in the project's dedicated iTerm session until it has diagnosed the login issue, implemented a fix, and passed the relevant tests. Inspect progress between steps, provide follow-up instructions when needed, and verify the final result against these criteria. Do not duplicate tasks that are still running. Ask me when a decision outside this scope is required, and report completion with the changes and test results.
 
-The repository source provides 12 stdio MCP tools: the original session discovery, terminal read/write, creation, and naming tools plus four closing tools. Version 0.2.0 includes all 12 tools, including the four closing tools below. See the [closing-tools implementation specification](docs/closing-tools-spec.md) for the source contract.
+The published 0.2.0 package provides 12 stdio MCP tools: the original session discovery, terminal read/write, creation, and naming tools plus four closing tools. The `main` branch also contains an unreleased incremental read-only `inspect_sessions` tool, bringing the current source to 13 tools; it is not part of PyPI 0.2.0. See the [closing-tools implementation specification](docs/closing-tools-spec.md) for the source contract and the main-only audit details.
 
 ## Prerequisites
 
@@ -117,7 +117,7 @@ If Git refuses the update, resolve the local changes or branch divergence before
 
 Restart/reconnect the `iterm` MCP server using the client's supported control, or restart the client if necessary. Updating files does not replace an already running server. For Codex, use **Settings → MCP servers → Restart**, or restart Codex. See the [official MCP configuration guide](https://learn.chatgpt.com/docs/extend/mcp?surface=cli).
 
-After reconnecting, query the tools actually available in that client and run only `list_sessions`. Match the tool list to the installed release; for version 0.2.0, verify all 12 tools, including `close_session`, `close_tab`, `close_window`, and `clean_all_sessions`. A standalone handshake does not prove an existing conversation has refreshed its tools. If it still lists the old interfaces, reconnect or start a new conversation and check again. Do not create/close terminals or send input just to verify an upgrade. Never start Python with `--reload`.
+After reconnecting, query the tools actually available in that client and run only `list_sessions`. Match the tool list to the installed release; for version 0.2.0, verify all 12 tools, including `close_session`, `close_tab`, `close_window`, and `clean_all_sessions`. A checkout of `main` may additionally expose the unreleased read-only `inspect_sessions` tool (13 tools total); do not treat that source increment as part of PyPI 0.2.0. A standalone handshake does not prove an existing conversation has refreshed its tools. If it still lists the old interfaces, reconnect or start a new conversation and check again. Do not create/close terminals or send input just to verify an upgrade. Never start Python with `--reload`.
 
 You can also ask a local agent to do the update:
 
@@ -162,7 +162,7 @@ Example MCP client configuration (replace the command with your absolute path):
 
 Optional arguments:
 
-- `--read-only`: expose only the three read-only tools: `list_sessions`, `read_screen`, and `read_history`.
+- `--read-only`: the published 0.2.0 package exposes three read-only tools: `list_sessions`, `read_screen`, and `read_history`. A checkout of `main` additionally exposes the unreleased read-only `inspect_sessions` tool.
 - `--session-id <ID>`: restrict access to a specific session; repeat to allow multiple sessions. Window and tab creation is disabled when this restriction is active.
 
 By default, the server can operate on all iTerm sessions belonging to the current user. Read and send operations require an exact `session_id` from `list_sessions`; closing tools also accept the explicit selectors documented below. Targets are never inferred from focus, wildcards, prefixes, or titles.
@@ -174,6 +174,7 @@ By default, the server can operate on all iTerm sessions belonging to the curren
 | `list_sessions` | None | List session, tab, and window IDs, readable `name`, and session metadata. |
 | `read_screen` | `session_id` | Read rendered screen lines, dimensions, and cursor position. |
 | `read_history` | `session_id`, `lines=100` | Read retained scrollback, up to 2,000 lines. |
+| `inspect_sessions` | `session_id=None`, `nickname=None` | **Main-only unreleased increment.** Read-only cleanup-capability audit. Select exactly one exact session ID or unique case-folded nickname, or omit both to inspect all authorized visible sessions. Reports bounded prompt/process/CLI evidence, activity, identity and persistence observations, blockers, remediation, and advisory close-readiness; it does not authorize work or closing and never sends input, exits a CLI, writes a receipt, or closes a session. |
 | `send_text` | `session_id`, `text` | Send exact text, up to 16 KiB, without appending a newline. |
 | `send_keys` | `session_id`, `key` | Send one terminal key sequence. |
 | `create_window` | Optional `command` | Create a window using the default profile, optionally with a startup command; return its IDs. |
@@ -183,6 +184,12 @@ By default, the server can operate on all iTerm sessions belonging to the curren
 | `close_tab` | `tab_id=None`, `session_id=None`, `nickname=None`, `force=False`, `dry_run=False` | Close the tab containing the selected session or tab. Exactly one selector is required. |
 | `close_window` | `window_id=None`, `session_id=None`, `nickname=None`, `force=False`, `dry_run=False` | Close the window containing the selected session or window. Exactly one selector is required. |
 | `clean_all_sessions` | `force=False`, `dry_run=False` | Inspect the initial session snapshot and clean authorized sessions. By default, skip busy, unknown, or unrecoverable sessions; `force=true` attempts every authorized session in that snapshot. |
+
+### Read-only session capability audit
+
+`inspect_sessions` is an advisory, read-only diagnostic in the current `main` source and is not included in the published 0.2.0 package. `session_id` and `nickname` are mutually exclusive. An exact `session_id` or a unique nickname (trimmed and case-folded) selects one authorized session; omitting both inspects every currently authorized visible session. Invalid, ambiguous, unavailable, or out-of-scope selectors fail without terminal writes.
+
+Each result includes the session, tab, and window identity plus bounded `prompt`, `process`, `cli`, `terminal_activity`, `business_acceptance`, and `close_readiness` sections. The diagnostic may report whether evidence is available, observed activity, stable process/CLI identity, chat persistence observations, a blocker code, and a remediation suggestion. `business_acceptance` is always `not_observed`; `close_readiness` is advisory only, with `status` set to `eligible_if_unchanged`, `blocked`, or `unknown` and `ready` true only for `eligible_if_unchanged`. Even a `ready: true` result is not authorization or proof that a close will succeed. Re-probe immediately before any lifecycle write. The tool reads evidence only: it does not send terminal input, exit a CLI, persist a recovery receipt, or invoke native close.
 
 ### Closing tools
 

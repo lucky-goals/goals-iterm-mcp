@@ -21,10 +21,11 @@ import asyncio
 import importlib
 import inspect
 import sys
+import uuid
 from collections.abc import Callable, Iterable, Mapping, Sequence
 from typing import Any
 
-from .cli_recovery import CliRecoveryAdapter
+from .cli_recovery import CliRecoveryAdapter, normalize_cli
 from .errors import DomainError
 from .process_inspection import MacOSProcessProvider, ProcessIdentity, ProcessRecord
 
@@ -32,6 +33,158 @@ from .process_inspection import MacOSProcessProvider, ProcessIdentity, ProcessRe
 _MISSING = object()
 _KINDS = {"session", "tab", "window"}
 _STATES = {"idle", "busy", "unknown", "exited"}
+_CLI_ACTIVITY_STATES = {"idle", "busy", "waiting", "unknown", "exited"}
+_KNOWN_DIAGNOSTIC_CODES = frozenset(
+    {
+        "CLI_IDENTITY_AMBIGUOUS",
+        "CLI_IDENTITY_MISSING",
+        "CLI_IDENTITY_UNKNOWN",
+        "CLI_IDENTITY_STARTUP_ONLY",
+        "CLI_IDENTITY_UNVERIFIED",
+        "CLI_IDENTITY_EXPIRED",
+        "PROCESS_IDENTITY_MISSING",
+        "PROCESS_IDENTITY_CHANGED",
+        "PROCESS_IDENTITY_UNVERIFIED",
+        "CLI_UNSUPPORTED",
+        "SELF_PROTECTION",
+        "PROBE_UNAVAILABLE",
+        "ACTIVITY_EVIDENCE_UNVERIFIED",
+    }
+)
+_KNOWN_DIAGNOSTIC_SOURCES = frozenset(
+    {
+        "registered_process",
+        "process_argv_startup",
+        "process_open_file",
+        "cursor_pid_log",
+        "cursor_pid",
+        "process_metadata",
+        "process_tree",
+        "registry",
+        "unsupported_cli",
+        "cli_context",
+        "pid",
+        "kiro_session_list",
+        "kiro_pid",
+        "claude_pid",
+        "codex_pid",
+        "cursor_pid",
+        "caller_claim",
+        "unrecognized",
+        "row",
+        "unavailable",
+    }
+)
+
+
+def _safe_token(value: Any, default: str | None = None) -> str | None:
+    """Keep diagnostic labels bounded and free of arbitrary exception text."""
+
+    if not isinstance(value, str):
+        return default
+    value = value.strip()
+    if not value or len(value) > 96:
+        return default
+    if not all(char.isalnum() or char in {"_", "-", "."} for char in value):
+        return default
+    return value
+
+
+def _safe_code(value: Any, default: str | None = None) -> str | None:
+    if isinstance(value, str) and value in _KNOWN_DIAGNOSTIC_CODES:
+        return value
+    return default
+
+
+def _safe_blocker(value: Any) -> str | None:
+    # Redaction must not remove the fact that an adapter blocked this target.
+    if value is None or value == "":
+        return None
+    return _safe_code(value, "PROBE_UNAVAILABLE")
+
+
+def _safe_source(value: Any, default: str = "unavailable") -> str:
+    if isinstance(value, str) and value in _KNOWN_DIAGNOSTIC_SOURCES:
+        return value
+    return default
+
+
+def _safe_uuid(value: Any) -> str | None:
+    if not isinstance(value, str):
+        return None
+    try:
+        return str(uuid.UUID(value))
+    except (ValueError, AttributeError):
+        return None
+
+
+def _safe_identity(value: Any) -> dict[str, Any] | None:
+    """Project a stable identity without exposing arbitrary process fields."""
+
+    identity = _stable_identity(value)
+    if identity is None:
+        return None
+    result: dict[str, Any] = {"pid": int(identity["pid"]), "start": str(identity["start"])}
+    tty = identity.get("tty")
+    if isinstance(tty, str) and tty and len(tty) <= 96:
+        result["tty"] = tty
+    return result
+
+
+_KNOWN_DIAGNOSTIC_REASONS = {
+    "prompt_unavailable",
+    "shell_integration_unavailable",
+    "prompt_command_range_unavailable",
+    "prompt_command_running",
+    "prompt_command_finished_without_new_prompt",
+    "prompt_state_observed",
+    "shell_prompt_empty_and_tty_idle",
+    "active_job_evidence_unavailable",
+    "stopped_job_on_tty",
+    "active_job_on_tty",
+    "stable_process_identity_unavailable",
+    "process_inspection_unavailable",
+    "target_process_is_mcp_ancestor",
+    "registered CLI process start changed",
+    "no supported coding CLI was identified",
+    "recognized CLI has no current process id",
+    "Cursor process is recognized but no process-bound chat UUID was found",
+    "Cursor process identity is bound; task activity is not passively exposed",
+    "Kiro process identity is registered; task activity is not passively exposed",
+    "Kiro exposes saved-session status but no process-bound foreground UUID",
+    "CLI provider exposes no current task lifecycle evidence",
+    "registration does not provide a current prompt or lifecycle event",
+    "observe() was given an activity claim without a live prompt/event evidence",
+}
+
+_KNOWN_ACTIVITY_GAPS = {
+    "CLI provider exposes no current task lifecycle evidence": "ACTIVITY_EVIDENCE_UNAVAILABLE",
+    "registration does not provide a current prompt or lifecycle event": "ACTIVITY_EVIDENCE_UNVERIFIED",
+    "observe() was given an activity claim without a live prompt/event evidence": "ACTIVITY_EVIDENCE_UNVERIFIED",
+}
+
+
+def _diagnostic_reason(value: Any, default: str = "evidence_unavailable") -> str:
+    """Return a fixed diagnostic reason, never an adapter exception message."""
+
+    if isinstance(value, str) and value in _KNOWN_DIAGNOSTIC_REASONS:
+        return value
+    if isinstance(value, str):
+        for prefix in (
+            "prompt_reader_failed:",
+            "prompt_unavailable:",
+            "process_inspection_failed:",
+            "cli_probe_failed:",
+        ):
+            if value.startswith(prefix):
+                return prefix[:-1]
+    return default
+
+
+def _diagnostic_activity_gap(value: Any) -> str | None:
+    if not isinstance(value, str):
+        return None
+    return _KNOWN_ACTIVITY_GAPS.get(value)
 
 
 async def _maybe_await(value: Any) -> Any:
@@ -463,7 +616,10 @@ class ClosingBackend:
                 ((), {}),
             ]
             try:
-                return await _invoke_compatible(self.prompt_reader, variants), None
+                value = await _invoke_compatible(self.prompt_reader, variants)
+                # iTerm returns None when shell integration has not produced a
+                # prompt. Keep that distinct from an unknown prompt state.
+                return value, None if value is not None else "prompt_unavailable"
             except asyncio.CancelledError:
                 raise
             except Exception as exc:
@@ -479,7 +635,8 @@ class ClosingBackend:
         if getter is None or connection is None:
             return None, "shell_integration_unavailable"
         try:
-            return await _maybe_await(getter(connection, sid)), None
+            value = await _maybe_await(getter(connection, sid))
+            return value, None if value is not None else "prompt_unavailable"
         except asyncio.CancelledError:
             raise
         except Exception as exc:
@@ -498,7 +655,9 @@ class ClosingBackend:
             return None, "process_inspection_unavailable"
         variants = [((row, session), {}), ((row,), {}), ((session,), {}), ((), {})]
         try:
-            return await _invoke_compatible(method, variants), None
+            value = await _invoke_compatible(method, variants)
+            # A provider may use None to report an unavailable process census.
+            return value, None if value is not None else "process_inspection_unavailable"
         except asyncio.CancelledError:
             raise
         except Exception as exc:
@@ -609,6 +768,351 @@ class ClosingBackend:
             return list(value)
         return []
 
+    @staticmethod
+    def _observed_cli_name(
+        row: Mapping[str, Any],
+        process: Mapping[str, Any] | None,
+        cli_value: Mapping[str, Any] | None,
+        cli_sessions: Sequence[Any],
+    ) -> str | None:
+        values: list[Any] = []
+        if cli_value is not None:
+            values.extend(cli_value.get(key) for key in ("cli", "program", "executable"))
+        context = _mapping(row.get("context"))
+        if context is not None:
+            values.append(_attr(context.get("program"), "value", default=None))
+        if process is not None:
+            process_values: list[Any] = [process]
+            for key in ("active_jobs", "stopped_jobs"):
+                value = process.get(key)
+                if isinstance(value, Iterable) and not isinstance(value, (str, bytes, Mapping)):
+                    process_values.extend(value)
+            for item in process_values:
+                item_map = _mapping(item)
+                if item_map is not None:
+                    values.extend(item_map.get(key) for key in ("executable", "program", "cli"))
+        for item in cli_sessions:
+            item_map = _mapping(item)
+            if item_map is not None:
+                values.extend(item_map.get(key) for key in ("cli", "program", "executable"))
+        names = {normalized for value in values if (normalized := normalize_cli(value)) is not None}
+        return next(iter(names)) if len(names) == 1 else None
+
+    @staticmethod
+    def _diagnostic_remediation(
+        *,
+        state: str,
+        blocked_code: str | None,
+        prompt_reason: str,
+        process_reason: str,
+    ) -> str:
+        remediation = {
+            "CLI_IDENTITY_MISSING": (
+                "Keep the session open until a current-process chat identity is observed "
+                "or supplied by a trusted integration; do not force close."
+            ),
+            "CLI_IDENTITY_UNKNOWN": (
+                "Keep the session open until the current CLI identity can be "
+                "verified by a supported passive adapter."
+            ),
+            "CLI_IDENTITY_STARTUP_ONLY": (
+                "Wait for process-open transcript/rollout/log evidence or a trusted "
+                "process registration; startup arguments alone are insufficient."
+            ),
+            "CLI_IDENTITY_AMBIGUOUS": (
+                "Resolve the conflicting process-bound identities and run a fresh "
+                "read-only probe before closing."
+            ),
+            "PROCESS_IDENTITY_MISSING": (
+                "Enable shell/process integration or retry while a stable PID/start "
+                "identity is available; do not infer idle."
+            ),
+            "PROCESS_IDENTITY_CHANGED": (
+                "The process changed during observation; refresh the session and "
+                "re-probe before any close."
+            ),
+            "PROCESS_IDENTITY_UNVERIFIED": (
+                "Retry while the process provider can verify a stable PID/start "
+                "identity; do not infer idle from missing identity evidence."
+            ),
+            "CLI_IDENTITY_UNVERIFIED": (
+                "Wait for verified current-process chat identity evidence before "
+                "attempting CLI recovery or close."
+            ),
+            "SELF_PROTECTION": "The target is an MCP process ancestor and must not be closed.",
+            "CLI_UNSUPPORTED": (
+                "Keep the session open and provide a trusted adapter for this CLI; "
+                "unknown CLIs are not treated as ordinary shells."
+            ),
+        }
+        if blocked_code in remediation:
+            return remediation[blocked_code]
+        if state == "busy":
+            return (
+                "Wait for terminal activity to finish and run a fresh probe; business "
+                "task completion is not observed."
+            )
+        if state == "idle":
+            return "Re-probe immediately before any close; this observation is not authorization."
+        if prompt_reason in {"prompt_unavailable", "shell_integration_unavailable"}:
+            return (
+                "Enable iTerm shell integration or retain the session until independent "
+                "process evidence is available; do not infer idle."
+            )
+        if process_reason == "process_inspection_unavailable":
+            return "Retry with a readable process census; do not infer idle from missing evidence."
+        return "Keep the session open and run a fresh read-only probe when evidence improves."
+
+    @classmethod
+    def diagnostic(cls, row: Mapping[str, Any], probe: Mapping[str, Any]) -> dict[str, Any]:
+        """Project one probe into a bounded, read-only cleanup diagnostic.
+
+        This projection deliberately omits command arguments, environments,
+        resume argv, transcript/log contents and arbitrary adapter errors.  It
+        is advisory evidence only; callers must re-probe before a lifecycle
+        write.
+        """
+
+        process_value = probe.get("process")
+        process = _process_item(process_value)
+        active_jobs: list[Any] = []
+        stopped_jobs: list[Any] = []
+        jobs_explicit = False
+        if process is not None:
+            active_jobs, stopped_jobs, jobs_explicit = _record_active_jobs(process)
+        # A missing process record is an explicit unavailable observation, not
+        # an unknown value that a caller could mistake for an idle process.
+        process_available = False
+        process_reason = "process_inspection_unavailable"
+        process_identity = None
+        process_tty = None
+        protected = False
+        foreground = None
+        if process is not None:
+            available = process.get("available")
+            process_available = available if isinstance(available, bool) else True
+            process_reason = _diagnostic_reason(
+                process.get("reason"),
+                "process_evidence_available" if process_available else "process_inspection_unavailable",
+            )
+            process_identity = _safe_identity(process.get("identity") or process)
+            process_tty = process.get("tty")
+            if not isinstance(process_tty, str) or not process_tty or len(process_tty) > 96:
+                process_tty = process_identity.get("tty") if process_identity else None
+            protected = bool(process.get("protected"))
+            foreground = process.get("foreground") if isinstance(process.get("foreground"), bool) else None
+        process_activity = "unknown"
+        if process_available is True and (active_jobs or stopped_jobs):
+            process_activity = "busy"
+        elif process_available is True and jobs_explicit:
+            # An empty census is useful evidence, but is not by itself an idle
+            # proof when prompt/business evidence is absent.
+            process_activity = "no_active_jobs_observed"
+
+        prompt = _mapping(probe.get("prompt"))
+        prompt_available = bool(prompt and prompt.get("available") is True)
+        prompt_state = _safe_token(prompt.get("state") if prompt else None, "unknown")
+        if prompt_state not in {"editing", "running", "finished", "unknown"}:
+            prompt_state = "unknown"
+        command_empty = prompt.get("command_range_empty") if prompt else None
+        if not isinstance(command_empty, bool):
+            command_empty = None
+        prompt_reason = _diagnostic_reason(
+            prompt.get("reason") if prompt else None,
+            (
+                "prompt_state_observed"
+                if prompt_available and prompt_state != "unknown"
+                else "prompt_state_unknown"
+                if prompt_available
+                else "prompt_unavailable"
+            ),
+        )
+
+        cli_value = _mapping(probe.get("cli_evidence"))
+        cli_sessions_raw = probe.get("cli_sessions")
+        cli_sessions: list[dict[str, Any]] = []
+        if isinstance(cli_sessions_raw, Iterable) and not isinstance(cli_sessions_raw, (str, bytes, Mapping)):
+            for item in cli_sessions_raw:
+                item_map = _mapping(item)
+                if item_map is None:
+                    continue
+                chat_uuid = _safe_uuid(item_map.get("chat_uuid"))
+                cli_name = normalize_cli(item_map.get("cli") or item_map.get("program"))
+                if chat_uuid is None or cli_name is None:
+                    continue
+                source = _safe_source(item_map.get("identity_source"), "unavailable")
+                persistence = item_map.get("persistence_status")
+                if persistence not in {"saved", "empty", "unknown"}:
+                    persistence = "unknown"
+                identity_status = _safe_token(item_map.get("identity_status"), "unverified")
+                if identity_status not in {"verified", "startup_only", "unverified"}:
+                    identity_status = "unverified"
+                cli_sessions.append(
+                    {
+                        "cli": cli_name,
+                        "chat_uuid": chat_uuid,
+                        "identity_source": source,
+                        "identity_status": identity_status,
+                        "persistence_status": persistence,
+                    }
+                )
+        cli_name = cls._observed_cli_name(row, process, cli_value, cli_sessions_raw if isinstance(cli_sessions_raw, Sequence) else ())
+        if cli_value is not None:
+            cli_name = normalize_cli(cli_value.get("cli")) or cli_name
+        cli_identity = _safe_identity(cli_value.get("identity") if cli_value else None)
+        cli_activity = _safe_token(cli_value.get("activity") if cli_value else None, "unknown")
+        if cli_activity not in _CLI_ACTIVITY_STATES:
+            cli_activity = "unknown"
+        cli_identity_source = _safe_source(
+            (cli_value.get("source") or cli_value.get("identity_source"))
+            if cli_value
+            else None
+        )
+        cli_reason = _diagnostic_reason(
+            cli_value.get("reason") if cli_value else None,
+            "cli_identity_unavailable" if cli_name else "no_supported_coding_cli",
+        )
+        cli_gap = _safe_code(cli_value.get("evidence_gap") if cli_value else None)
+        cli_activity_gap = _diagnostic_activity_gap(
+            cli_value.get("activity_evidence_gap") if cli_value else None
+        )
+        cli_activity_source = _safe_source(
+            cli_value.get("activity_source") if cli_value else None
+        )
+        cli_blocked = _safe_blocker(cli_value.get("blocked_code") if cli_value else None)
+        persistence_values = [item["persistence_status"] for item in cli_sessions]
+        if not persistence_values:
+            persistence = "not_observed"
+        elif "saved" in persistence_values:
+            persistence = "saved"
+        elif "empty" in persistence_values:
+            persistence = "empty"
+        else:
+            persistence = "unknown"
+        identity_statuses = [item["identity_status"] for item in cli_sessions]
+        if not identity_statuses:
+            identity_status = "not_observed"
+        elif all(value == "verified" for value in identity_statuses):
+            identity_status = "verified"
+        elif "startup_only" in identity_statuses:
+            identity_status = "startup_only"
+        else:
+            identity_status = "unverified"
+
+        state = _safe_token(probe.get("state"), "unknown")
+        if state not in _STATES:
+            state = "unknown"
+        blocked_code = _safe_blocker(probe.get("blocked_code") or cli_blocked)
+        terminal_source = "unknown"
+        if process_activity == "busy":
+            terminal_source = "process"
+        elif prompt_state in {"editing", "running", "finished"}:
+            terminal_source = "prompt"
+        terminal_reason = _diagnostic_reason(
+            probe.get("reason"),
+            "active_job_on_tty" if process_activity == "busy" else prompt_reason,
+        )
+        cli_recovery_ready = (
+            cli_name is None
+            or (
+                cli_identity is not None
+                and bool(cli_sessions)
+                and identity_status == "verified"
+                and not cli_blocked
+            )
+        )
+        process_identity_ready = (
+            process_available is True and process_identity is not None and not protected
+        )
+        readiness_reason = blocked_code or terminal_reason
+        if blocked_code or not cli_recovery_ready or not process_identity_ready:
+            readiness_status = "blocked" if blocked_code or state in {"busy", "exited"} else "unknown"
+            if not blocked_code and not process_identity_ready:
+                readiness_reason = "PROCESS_IDENTITY_UNVERIFIED"
+            elif not blocked_code and not cli_recovery_ready:
+                readiness_reason = "CLI_IDENTITY_UNVERIFIED"
+        elif state == "idle":
+            # This is conditional readiness, never a permission or close
+            # authorization. The process and recovery proofs still race and
+            # must be rechecked by the closing path.
+            readiness_status = "eligible_if_unchanged"
+            readiness_reason = "idle_with_verified_process_and_recovery"
+        elif state in {"busy", "exited"}:
+            readiness_status = "blocked"
+        else:
+            readiness_status = "unknown"
+        remediation = cls._diagnostic_remediation(
+            state=state,
+            blocked_code=(
+                blocked_code
+                if blocked_code is not None
+                else readiness_reason
+                if readiness_reason in _KNOWN_DIAGNOSTIC_CODES
+                else None
+            ),
+            prompt_reason=prompt_reason,
+            process_reason=process_reason,
+        )
+
+        session_id = _session_id(row)
+        return {
+            "session_id": session_id,
+            "window_id": row.get("window_id"),
+            "tab_id": row.get("tab_id"),
+            "name": _name_from_row(row, session_id or "unknown"),
+            "target": dict(row.get("target", {})) if isinstance(row.get("target"), Mapping) else {},
+            "prompt": {
+                "available": prompt_available,
+                "state": prompt_state,
+                "command_range_empty": command_empty,
+                "reason": prompt_reason,
+            },
+            "process": {
+                "available": process_available,
+                "identity": process_identity,
+                "tty": process_tty,
+                "active_job_count": len(active_jobs),
+                "stopped_job_count": len(stopped_jobs),
+                "activity": process_activity,
+                "protected": protected,
+                "foreground": foreground,
+                "reason": process_reason,
+            },
+            "cli": {
+                "recognized": cli_name is not None,
+                "name": cli_name,
+                "identity": cli_identity,
+                "identity_status": identity_status,
+                "identity_source": cli_identity_source,
+                "persistence": persistence,
+                "sessions": cli_sessions,
+                "activity": {
+                    "state": cli_activity,
+                    "source": cli_activity_source,
+                    "reason": cli_reason,
+                    "evidence_gap": cli_activity_gap,
+                },
+                "evidence_gap": cli_gap,
+                "activity_evidence_gap": cli_activity_gap,
+                "activity_source": cli_activity_source,
+                "blocked_code": cli_blocked,
+            },
+            "terminal_activity": {
+                "state": state,
+                "source": terminal_source,
+                "reason": terminal_reason,
+            },
+            "business_acceptance": "not_observed",
+            "close_readiness": {
+                "status": readiness_status,
+                "ready": readiness_status == "eligible_if_unchanged",
+                "authorization": "not_granted",
+                "reason": readiness_reason,
+                "remediation": remediation,
+                "advisory": True,
+            },
+        }
+
     async def probe(self, row: Mapping[str, Any]) -> dict[str, Any]:
         normalized = self._normalize_row(row)
         sid = normalized["session_id"]
@@ -659,7 +1163,13 @@ class ClosingBackend:
                 foreground = foreground_value
 
         cli_sessions = self._cli_sessions(cli, normalized)
-        state = _state_name(_attr(prompt, "state", "prompt_state", default=None))
+        prompt_state = _state_name(_attr(prompt, "state", "prompt_state", default=None))
+        command_empty = (
+            _command_range_empty(_attr(prompt, "command_range", default=None))
+            if prompt is not None
+            else None
+        )
+        state = prompt_state
         reason = "prompt_unavailable"
         blocked_code: str | None = None
         binding = None
@@ -685,7 +1195,6 @@ class ClosingBackend:
             state = "unknown"
             reason = "prompt_command_finished_without_new_prompt"
         elif state == "editing":
-            command_empty = _command_range_empty(_attr(prompt, "command_range", default=None))
             if command_empty is not True:
                 state = "unknown"
                 reason = "prompt_command_range_unavailable"
@@ -711,11 +1220,59 @@ class ClosingBackend:
             state = "unknown"
             reason = prompt_error or "prompt_state_unknown"
 
+        # Positive process evidence is sufficient to say that the terminal is
+        # busy even when prompt state is missing/unknown.  An empty process
+        # census is intentionally not promoted to idle; prompt/business
+        # evidence is still required for that close-safe conclusion.
+        if not protected and state == "unknown":
+            if stopped_jobs:
+                state = "busy"
+                reason = "stopped_job_on_tty"
+            elif active_jobs:
+                state = "busy"
+                reason = "active_job_on_tty"
+
         cli_map = _mapping(cli)
         # A process provider often reports the shell as the root identity and
         # the coding CLI as one active descendant.  The CLI adapter's
         # process-bound identity is the one that may be interrupted.
         cli_identity = _stable_identity(cli_map.get("identity")) if cli_map is not None else None
+        observed_cli = self._observed_cli_name(normalized, process_map, cli_map, cli_sessions)
+        raw_cli_activity = cli_map.get("state") if cli_map is not None else None
+        cli_activity = (
+            raw_cli_activity.casefold()
+            if isinstance(raw_cli_activity, str)
+            else "unknown"
+        )
+        if cli_activity not in _CLI_ACTIVITY_STATES:
+            cli_activity = "unknown"
+        cli_source = None
+        cli_reason = None
+        cli_blocked = None
+        cli_gap = None
+        cli_activity_source = None
+        if cli_map is not None:
+            cli_source = cli_map.get("identity_source") or cli_map.get("source")
+            cli_reason = cli_map.get("reason")
+            cli_blocked = cli_map.get("blocked_code")
+            cli_gap = cli_map.get("evidence_gap")
+            cli_activity_source = cli_map.get("activity_source")
+        cli_evidence = {
+            "recognized": observed_cli is not None,
+            "cli": observed_cli,
+            "identity": cli_identity,
+            "activity": cli_activity,
+            "source": cli_source if isinstance(cli_source, str) else None,
+            "reason": cli_reason if isinstance(cli_reason, str) else None,
+            "blocked_code": cli_blocked if isinstance(cli_blocked, str) else None,
+            "evidence_gap": cli_gap if isinstance(cli_gap, str) else None,
+            "activity_source": cli_activity_source if isinstance(cli_activity_source, str) else None,
+            "activity_evidence_gap": (
+                cli_map.get("activity_evidence_gap")
+                if cli_map is not None and isinstance(cli_map.get("activity_evidence_gap"), str)
+                else None
+            ),
+        }
         if cli_sessions and cli_identity is not None:
             identity = cli_identity
         # Compare a registered CLI binding with the process-bound CLI
@@ -746,6 +1303,13 @@ class ClosingBackend:
             "reason": reason,
             "identity": identity,
             "cli_sessions": cli_sessions,
+            "prompt": {
+                "available": prompt is not None,
+                "state": prompt_state,
+                "command_range_empty": command_empty,
+                "reason": prompt_error or ("prompt_state_unknown" if prompt_state == "unknown" else None),
+            },
+            "cli_evidence": cli_evidence,
         }
         if process_map is not None:
             result["process"] = dict(process_map)
