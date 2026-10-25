@@ -1,6 +1,6 @@
 # Terminal closing tools — implementation contract
 
-Status: implementation specification for goals-iterm-mcp 0.2.1, 2026-10-25. This
+Status: implementation specification for goals-iterm-mcp 0.2.2, 2026-10-26. This
 supersedes the earlier proposal that `clean_all_sessions` refused the entire
 request when one session was busy. The four closing tools were first introduced
 in version 0.2.0.
