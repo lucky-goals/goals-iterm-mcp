@@ -29,6 +29,8 @@ PROBE_TIMEOUT = 5.0
 EXIT_TIMEOUT = 15.0
 CLOSE_TIMEOUT = 15.0
 VERIFY_TIMEOUT = 5.0
+VERIFY_POLL_WINDOW = 0.5
+VERIFY_POLL_INTERVAL = 0.05
 TOTAL_TIMEOUT = 120.0
 
 
@@ -126,7 +128,7 @@ async def _call_with_timeout(method: Any, *args: Any, timeout: float) -> Any:
     except DomainError as exc:
         code = exc.code if isinstance(exc.code, str) and exc.code else "BACKEND_UNAVAILABLE"
         side_effect_status = getattr(exc, "side_effect_status", None)
-        unknown = (
+        unknown = side_effect_status != "not_attempted" and (
             code in {"BACKEND_UNAVAILABLE", "TIMEOUT", "DISCONNECTED", "CANCELLED"}
             or code.endswith("_UNKNOWN")
             or "TIMEOUT" in code
@@ -287,14 +289,45 @@ def _normalize_probe(raw: Any) -> dict[str, Any]:
     if not isinstance(cli_raw, (list, tuple)):
         raise _ClosingError("CLI_IDENTITY_MISSING")
     chats = [_normalize_chat(item) for item in cli_raw]
+    raw_process = raw.get("process")
+    session_ended = bool(
+        raw.get("session_ended") is True
+        or (isinstance(raw_process, Mapping) and raw_process.get("session_ended") is True)
+    )
     return {
         "state": state,
         "reason": reason,
         "identity": _copy_json(raw.get("identity")),
         "cli_sessions": chats,
         "blocked_code": raw.get("blocked_code") if isinstance(raw.get("blocked_code"), str) else None,
+        "session_ended": session_ended,
         "_raw": dict(raw),
     }
+
+
+def _is_ended_pane(probe: Mapping[str, Any] | None) -> bool:
+    if not isinstance(probe, Mapping):
+        return False
+    if probe.get("state") != "exited":
+        return False
+    if probe.get("blocked_code") or probe.get("cli_sessions"):
+        return False
+    if probe.get("session_ended") is True:
+        return True
+    raw = probe.get("_raw")
+    if isinstance(raw, Mapping):
+        if raw.get("session_ended") is True:
+            return True
+        proc = raw.get("process")
+        if isinstance(proc, Mapping) and proc.get("session_ended") is True:
+            return True
+    return False
+
+
+def _activity_block_code(probe: Mapping[str, Any] | None) -> str:
+    if isinstance(probe, Mapping) and probe.get("state") == "unknown":
+        return "ACTIVITY_UNKNOWN"
+    return "ACTIVITY_BLOCKED"
 
 
 def _session_metadata(row: Mapping[str, Any], probe: Mapping[str, Any] | None = None) -> dict[str, Any]:
@@ -486,6 +519,8 @@ class CloseService:
         self._journal_failed = False
         self._cancelled = False
         self._post_exit_scope_changed = False
+        self._active_result: dict[str, Any] | None = None
+        self._session_results: dict[str, dict[str, Any]] | None = None
 
     @staticmethod
     def _operation(kind: str) -> str:
@@ -651,6 +686,8 @@ class CloseService:
             probes[sid] = probe
             result = self._row_result(current, probe)
             state = probe["state"]
+            ended_pane = _is_ended_pane(probe)
+            closeable_without_force = state == "idle" or ended_pane
             if probe.get("blocked_code"):
                 result.update({"closure_status": "retained", "skip_code": probe["blocked_code"]})
                 if kind == "all" and not force:
@@ -658,18 +695,18 @@ class CloseService:
                 else:
                     prefailed.append(result)
                 continue
-            if kind == "all" and not force and state != "idle":
-                result.update({"closure_status": "skipped", "skip_code": probe.get("blocked_code") or "ACTIVITY_BLOCKED"})
-                skipped.append(result)
-                continue
-            if state == "exited":
+            if state == "exited" and not ended_pane:
                 result.update({"closure_status": "retained", "skip_code": "SESSION_GONE"})
                 if kind == "all":
                     skipped.append(result)
                 else:
                     prefailed.append(result)
                 continue
-            if state != "idle" and not force:
+            if kind == "all" and not force and not closeable_without_force:
+                result.update({"closure_status": "skipped", "skip_code": probe.get("blocked_code") or _activity_block_code(probe)})
+                skipped.append(result)
+                continue
+            if not closeable_without_force and not force:
                 blocking.append(sid)
             # A force operation bypasses activity state, but not missing CLI
             # identity or a missing stable process identity.
@@ -683,7 +720,12 @@ class CloseService:
                     prefailed.append(result)
                 continue
         if kind != "all" and blocking:
-            return _Plan(kind, target, rows, probes, [], [], "ACTIVITY_BLOCKED", blocking)
+            block_code = (
+                "ACTIVITY_BLOCKED"
+                if any(probes.get(sid, {}).get("state") != "unknown" for sid in blocking)
+                else "ACTIVITY_UNKNOWN"
+            )
+            return _Plan(kind, target, rows, probes, [], [], block_code, blocking)
         if kind != "all" and prefailed:
             code = next((item.get("skip_code") for item in prefailed if item.get("skip_code")), None)
             return _Plan(kind, target, rows, probes, [], prefailed, code or probe_failure or "PREFLIGHT_FAILED", blocking)
@@ -752,11 +794,38 @@ class CloseService:
         receipt["recovery_record_id"] = record_id
         return record_id if isinstance(record_id, str) else None, path
 
+    def _sync_receipt_sessions(
+        self, session_results: Mapping[str, Mapping[str, Any]] | None = None
+    ) -> None:
+        if self._record is None:
+            return
+        source = session_results if session_results is not None else self._session_results
+        if not isinstance(source, Mapping):
+            return
+        sessions = self._record.get("sessions")
+        if not isinstance(sessions, list):
+            return
+        for entry in sessions:
+            if not isinstance(entry, dict):
+                continue
+            sid = entry.get("session_id")
+            if not isinstance(sid, str):
+                continue
+            latest = source.get(sid)
+            if not isinstance(latest, Mapping):
+                continue
+            for key in ("interruption", "exit", "closure_status", "closure_method", "reason"):
+                if key in latest and latest[key] is not None:
+                    entry[key] = _copy_json(latest[key])
+            if "cli_sessions" in latest:
+                entry["cli_sessions"] = _copy_json(latest["cli_sessions"])
+
     async def _journal(self, step: Mapping[str, Any], *, status: str | None = None) -> None:
         if self._record is None:
             return
         if self._journal_failed:
             return
+        self._sync_receipt_sessions()
         self._record.setdefault("steps", []).append(_copy_json(step))
         if status is not None:
             self._record["status"] = status
@@ -836,15 +905,21 @@ class CloseService:
         if fresh_probe.get("blocked_code"):
             # ``force`` only bypasses activity state.  A newly observed
             # protection/identity block still prevents the write.
-            raise _ClosingError(fresh_probe["blocked_code"])
+            raise _ClosingError(fresh_probe["blocked_code"], side_effect_status="not_attempted")
+        fresh_ended = _is_ended_pane(fresh_probe)
         if not _same_identity(probe.get("identity"), fresh_probe.get("identity")):
-            raise _TargetChanged()
+            if not (
+                fresh_ended
+                and fresh_probe.get("identity") is None
+                and not probe.get("cli_sessions")
+            ):
+                raise _TargetChanged()
         initial_chats = {item.get("chat_uuid") for item in probe.get("cli_sessions", [])}
         fresh_chats = {item.get("chat_uuid") for item in fresh_probe.get("cli_sessions", [])}
         if initial_chats != fresh_chats:
             raise _TargetChanged()
-        if not force and fresh_probe.get("state") != "idle":
-            raise _ClosingError("ACTIVITY_BLOCKED")
+        if not force and fresh_probe.get("state") != "idle" and not fresh_ended:
+            raise _ClosingError(_activity_block_code(fresh_probe), side_effect_status="not_attempted")
         return row, fresh_probe
 
     @staticmethod
@@ -940,18 +1015,25 @@ class CloseService:
             return ("unknown" if exc.unknown else "failed"), exc
 
     async def _verify_absent(self, expected_rows: Sequence[dict[str, Any]], *, kind: str) -> None:
-        current_rows = await _call_with_timeout(getattr(self.backend, "snapshot", None), timeout=VERIFY_TIMEOUT)
-        if not isinstance(current_rows, (list, tuple)):
-            raise _BackendUnavailable()
-        normalized = [_normalize_row(item) for item in current_rows]
         expected_ids = {item["session_id"] for item in expected_rows}
-        if any(item.get("session_id") in expected_ids for item in normalized):
-            raise _CloseFailed("CLOSE_UNVERIFIED")
+        loop = asyncio.get_running_loop()
+        deadline = loop.time() + VERIFY_POLL_WINDOW
+        while True:
+            current_rows = await _call_with_timeout(getattr(self.backend, "snapshot", None), timeout=VERIFY_TIMEOUT)
+            if not isinstance(current_rows, (list, tuple)):
+                raise _BackendUnavailable()
+            normalized = [_normalize_row(item) for item in current_rows]
+            if not any(item.get("session_id") in expected_ids for item in normalized):
+                return
+            if loop.time() >= deadline:
+                raise _CloseFailed("CLOSE_UNVERIFIED")
+            await asyncio.sleep(VERIFY_POLL_INTERVAL)
 
     async def _execute_plan(self, plan: _Plan, result: dict[str, Any], *, force: bool) -> dict[str, Any]:
         session_results: dict[str, dict[str, Any]] = {}
         for row in plan.rows:
             session_results[row["session_id"]] = self._row_result(row, plan.probes.get(row["session_id"]))
+        self._session_results = session_results
         for item in plan.prefailed:
             item.setdefault("closure_status", "failed")
             result["failed_sessions"].append(item)
@@ -1106,11 +1188,11 @@ class CloseService:
                 )
                 await self._journal({"step": "close_target", "kind": close_kind, "target_id": target_id, "status": "acknowledged"})
                 await self._verify_absent(expected_rows, kind=close_kind)
-                await self._journal({"step": "verify", "kind": close_kind, "target_id": target_id, "status": "closed"})
                 for expected in expected_rows:
                     item = session_results[expected["session_id"]]
                     item["closure_status"] = "closed"
                     result["closed_sessions"].append(item)
+                await self._journal({"step": "verify", "kind": close_kind, "target_id": target_id, "status": "closed"})
             except _ClosingError as exc:
                 if isinstance(exc, _Cancelled):
                     self._cancelled = True
@@ -1149,7 +1231,10 @@ class CloseService:
             not result["closed_sessions"]
             and not result["unknown_sessions"]
             and result["failed_sessions"]
-            and all(item.get("reason") in {"TARGET_CHANGED", "ACTIVITY_BLOCKED"} for item in result["failed_sessions"])
+            and all(
+                item.get("reason") in {"TARGET_CHANGED", "ACTIVITY_BLOCKED", "ACTIVITY_UNKNOWN"}
+                for item in result["failed_sessions"]
+            )
         ):
             # A fresh pre-write check can reject a plan after the receipt was
             # safely persisted.  No terminal write happened, so this remains
@@ -1190,7 +1275,9 @@ class CloseService:
         self._journal_failed = False
         self._cancelled = False
         self._post_exit_scope_changed = False
+        self._session_results = None
         result = self._base_result(kind, force, dry_run)
+        self._active_result = result
         if kind not in {"session", "tab", "window", "all"}:
             result.update({"status": "refused", "code": "INVALID_KIND"})
             return result
@@ -1217,7 +1304,10 @@ class CloseService:
                         probe = plan.probes.get(sid)
                         if row is not None:
                             detail = self._row_result(row, probe)
-                            detail.update({"closure_status": "retained", "reason": "ACTIVITY_BLOCKED"})
+                            probe_reason = (probe or {}).get("reason")
+                            detail.update({"closure_status": "retained", "reason": _activity_block_code(probe)})
+                            if isinstance(probe_reason, str) and probe_reason:
+                                detail["probe_reason"] = probe_reason
                             result["failed_sessions"].append(detail)
                     result.update({"status": "dry_run", "code": plan.code or "ACTIVITY_BLOCKED", "blocking_sessions": list(plan.blocking)})
                     result["would_close_sessions"] = []
@@ -1229,7 +1319,10 @@ class CloseService:
                     if row is None:
                         continue
                     detail = self._row_result(row, probe)
-                    detail.update({"closure_status": "retained", "reason": "ACTIVITY_BLOCKED"})
+                    probe_reason = (probe or {}).get("reason")
+                    detail.update({"closure_status": "retained", "reason": _activity_block_code(probe)})
+                    if isinstance(probe_reason, str) and probe_reason:
+                        detail["probe_reason"] = probe_reason
                     result["failed_sessions"].append(detail)
                 result.update({"status": "refused", "code": plan.code or "ACTIVITY_BLOCKED", "blocking_sessions": list(plan.blocking)})
                 result["skipped_sessions"] = []
@@ -1309,23 +1402,62 @@ class CloseService:
     ) -> dict[str, Any]:
         """Run one close operation with a bounded overall orchestration time."""
 
-        try:
-            return await asyncio.wait_for(
-                self._run_inner(
-                    kind,
-                    session_id=session_id,
-                    nickname=nickname,
-                    tab_id=tab_id,
-                    window_id=window_id,
-                    force=force,
-                    dry_run=dry_run,
-                ),
-                timeout=TOTAL_TIMEOUT,
+        self._active_result = None
+        loop = asyncio.get_running_loop()
+        timed_out = False
+        inner_task = asyncio.create_task(
+            self._run_inner(
+                kind,
+                session_id=session_id,
+                nickname=nickname,
+                tab_id=tab_id,
+                window_id=window_id,
+                force=force,
+                dry_run=dry_run,
             )
-        except asyncio.TimeoutError:
-            result = self._base_result(kind, force, dry_run)
+        )
+
+        def _on_timeout() -> None:
+            nonlocal timed_out
+            if not inner_task.done():
+                timed_out = True
+                inner_task.cancel()
+
+        timer = loop.call_later(TOTAL_TIMEOUT, _on_timeout)
+        try:
+            try:
+                result = await inner_task
+            except asyncio.CancelledError:
+                inner_task.cancel()
+                try:
+                    result = await inner_task
+                except asyncio.CancelledError:
+                    result = (
+                        self._active_result
+                        if isinstance(self._active_result, dict)
+                        else self._base_result(kind, force, dry_run)
+                    )
+                    result.update({"status": "unknown", "code": "CANCELLED"})
+        finally:
+            timer.cancel()
+
+        if timed_out:
+            for item in result.get("unknown_sessions", ()):
+                if isinstance(item, dict) and item.get("reason") == "CANCELLED":
+                    item["reason"] = "TIMEOUT"
+            if isinstance(self._session_results, dict):
+                for item in self._session_results.values():
+                    if isinstance(item, dict) and item.get("closure_status") == "pending":
+                        item["closure_status"] = "unknown"
+                        item["reason"] = "TIMEOUT"
+                        if item not in result["unknown_sessions"] and item not in result["failed_sessions"] and item not in result["closed_sessions"]:
+                            result["unknown_sessions"].append(item)
+                    elif isinstance(item, dict) and item.get("reason") == "CANCELLED":
+                        item["reason"] = "TIMEOUT"
             result.update({"status": "unknown", "code": "TIMEOUT"})
-            return result
+            if self._record is not None:
+                await self._journal({"step": "timeout", "status": "TIMEOUT"}, status="unknown")
+        return result
 
 
 __all__ = ["CloseService", "RecoveryStore"]

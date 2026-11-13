@@ -1,6 +1,7 @@
 """Focused direct MCP contract tests; no real terminal writes."""
 import asyncio
 import sys
+import tempfile
 import unittest
 from unittest.mock import AsyncMock
 
@@ -297,6 +298,21 @@ with tempfile.TemporaryDirectory() as directory:
                 self.assertTrue(payload["recovery_record_path"])
                 self.assertEqual(payload["closed_sessions"][0]["cli_sessions"][0]["chat_uuid"],
                                  "12345678-1234-1234-1234-123456789abc")
+
+    async def test_invoke_close_propagates_allowlist_to_lazily_created_closing_backend(self):
+        fake = backend()
+        fake.list_sessions.return_value = [
+            {"target": {"session_id": "session-1", "session_epoch": "e1", "broker_epoch": "b"}, "window_id": "w1", "tab_id": "t1"},
+            {"target": {"session_id": "session-2", "session_epoch": "e2", "broker_epoch": "b"}, "window_id": "w2", "tab_id": "t2"},
+        ]
+        with tempfile.TemporaryDirectory() as directory:
+            tools = ItermTools(fake, session_ids=["session-1"], recovery_store=directory)
+            result = await tools.invoke_close("session", session_id="session-2")
+        self.assertEqual(tools._closing_backend.allowed, frozenset({"session-1"}))
+        self.assertTrue(tools._closing_backend.is_allowed({"session_id": "session-1"}))
+        self.assertFalse(tools._closing_backend.is_allowed({"session_id": "session-2"}))
+        self.assertEqual(result.structuredContent["status"], "refused")
+        self.assertEqual(result.structuredContent["code"], "OUT_OF_SCOPE")
 
 
 if __name__ == "__main__":

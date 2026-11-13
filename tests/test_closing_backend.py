@@ -537,6 +537,99 @@ class ClosingBackendTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(ctx.exception.side_effect_status, "unknown")
         self.assertEqual(events, ["signal"])
 
+    async def test_ended_session_pane_probes_exited_and_closes_without_force(self):
+        raw_row = make_row("s1")
+        backend = FakeBackend([raw_row])
+        var_session = VariableSession(
+            backend,
+            {"jobPid": None, "pid": 555, "tty": "/dev/ttys009", "jobName": None, "path": "/tmp"},
+        )
+        backend.native = var_session
+        backend.rows[0]["_session"] = var_session
+        provider = MacOSProcessProvider(enabled=True, own_pid=900)
+        provider.list_processes = lambda: [
+            ProcessRecord(900, 1, 900, 900, "ttys000", "S", "mcp-start", "python"),
+        ]
+        adapter = ClosingBackend(
+            backend,
+            process_provider=provider,
+            prompt_reader=lambda current: None,
+        )
+
+        rows = await adapter.snapshot()
+        probe = await adapter.probe(rows[0])
+        self.assertIn("pid", var_session.reads)
+        self.assertEqual(probe["state"], "exited")
+        self.assertTrue(probe.get("session_ended"))
+        self.assertEqual(probe["reason"], "session_processes_exited")
+
+        diag = adapter.diagnostic(rows[0], probe)
+        self.assertEqual(diag["terminal_activity"]["state"], "exited")
+        self.assertTrue(diag["close_readiness"]["ready"])
+        self.assertEqual(diag["close_readiness"]["reason"], "session_already_exited")
+
+        exit_result = await adapter.exit_session(rows[0], probe, force=False)
+        self.assertEqual(exit_result["cli_exit_status"], "not_needed")
+        self.assertFalse(exit_result["task_interrupted"])
+        await adapter.close_target("session", "s1", rows, force=False)
+        self.assertEqual(var_session.close_calls, [False])
+
+    async def test_pre_signal_unknown_errors_mark_side_effect_not_attempted(self):
+        backend, adapter = self._backend(
+            process=lambda current: {
+                "available": True,
+                "identity": None,
+                "active_jobs": [{"pid": 77}],
+                "stopped_jobs": [],
+                "foreground": True,
+            },
+            prompt=lambda current: None,
+        )
+        row = (await adapter.snapshot())[0]
+        probe = await adapter.probe(row)
+
+        with self.assertRaises(DomainError) as ctx:
+            await adapter.exit_session(row, probe, force=True)
+
+        self.assertEqual(ctx.exception.code, "PROCESS_IDENTITY_UNKNOWN")
+        self.assertEqual(ctx.exception.side_effect_status, "not_attempted")
+
+    async def test_close_target_polls_brief_delayed_disappearance(self):
+        class DelayedNativeSession(NativeSession):
+            async def async_close(self, *, force=False):
+                self.close_calls.append(force)
+                self.owner.remaining_polls = 1
+
+        class DelayedBackend(FakeBackend):
+            def __init__(self, rows):
+                super().__init__(rows)
+                self.remaining_polls = None
+                self.native = DelayedNativeSession(self)
+                for item in self.rows:
+                    item["_session"] = self.native
+
+            async def list_sessions(self):
+                self.snapshot_calls += 1
+                if self.remaining_polls is not None:
+                    if self.remaining_polls > 0:
+                        self.remaining_polls -= 1
+                        return [dict(item) for item in self.rows]
+                    self.rows.clear()
+                return [dict(item) for item in self.rows]
+
+        backend = DelayedBackend([make_row("s1")])
+        adapter = ClosingBackend(
+            backend,
+            process_provider=ProcessEvidence(),
+            prompt_reader=lambda current: Prompt(),
+        )
+        rows = await adapter.snapshot()
+        probe = await adapter.probe(rows[0])
+        await adapter.exit_session(rows[0], probe, force=False)
+        await adapter.close_target("session", "s1", rows, force=False)
+        self.assertEqual(backend.native.close_calls, [False])
+        self.assertEqual(backend.rows, [])
+
 
 class ProcessInspectionTests(unittest.TestCase):
     def test_ps_runner_uses_argv_and_redacts_command_arguments(self):

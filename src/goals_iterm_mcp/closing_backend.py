@@ -35,6 +35,8 @@ _MISSING = object()
 _KINDS = {"session", "tab", "window"}
 _STATES = {"idle", "busy", "unknown", "exited"}
 _CLI_ACTIVITY_STATES = {"idle", "busy", "waiting", "unknown", "exited"}
+_CLOSE_VERIFY_WINDOW = 0.5
+_CLOSE_VERIFY_INTERVAL = 0.05
 _MAX_DIAGNOSTIC_JOBS = 32
 _MAX_DIAGNOSTIC_IGNORED_ANCESTORS = 8
 _LOGIN_ANCESTOR_CLASSIFICATION = "verified_login_ancestor"
@@ -157,6 +159,8 @@ _KNOWN_DIAGNOSTIC_REASONS = {
     "active_job_on_tty",
     "stable_process_identity_unavailable",
     "process_inspection_unavailable",
+    "session_processes_exited",
+    "session_not_in_snapshot",
     "target_process_is_mcp_ancestor",
     "registered CLI process start changed",
     "no supported coding CLI was identified",
@@ -525,6 +529,16 @@ def _mark_side_effect_unknown(error: BaseException) -> BaseException:
     return error
 
 
+def _mark_side_effect_not_attempted(error: DomainError) -> DomainError:
+    """Mark pre-signal validation failures as guaranteed side-effect-free."""
+
+    try:
+        error.side_effect_status = "not_attempted"
+    except Exception:
+        pass
+    return error
+
+
 async def _invoke_compatible(
     method: Callable[..., Any], variants: Sequence[tuple[tuple[Any, ...], dict[str, Any]]]
 ) -> Any:
@@ -766,14 +780,25 @@ class ClosingBackend:
                 value = None
             if value not in (None, ""):
                 values[name] = value
+        if "jobPid" not in values:
+            try:
+                root_pid = await _maybe_await(getter("pid"))
+            except asyncio.CancelledError:
+                raise
+            except Exception:
+                root_pid = None
+            if root_pid not in (None, ""):
+                values["pid"] = root_pid
         if values:
             context = dict(_mapping(result.get("context")) or {})
-            aliases = {"jobPid": "job_pid", "jobName": "program", "path": "cwd"}
+            aliases = {"jobPid": "job_pid", "pid": "root_pid", "jobName": "program", "path": "cwd"}
             for name, value in values.items():
                 context[aliases.get(name, name)] = {"value": value}
             result["context"] = context
             if "jobPid" in values:
                 result["job_pid"] = values["jobPid"]
+            if "pid" in values:
+                result["root_pid"] = values["pid"]
             if "tty" in values:
                 result["tty"] = values["tty"]
         return result
@@ -935,6 +960,11 @@ class ClosingBackend:
             )
         if state == "idle":
             return "Re-probe immediately before any close; this observation is not authorization."
+        if state == "exited" and process_reason == "session_processes_exited":
+            return (
+                "Session processes have already exited; re-probe immediately "
+                "before closing the remaining pane."
+            )
         if prompt_reason in {"prompt_unavailable", "shell_integration_unavailable"}:
             return (
                 "Enable iTerm shell integration or retain the session until independent "
@@ -974,6 +1004,7 @@ class ClosingBackend:
         process_tty = None
         protected = False
         foreground = None
+        session_ended = False
         if process is not None:
             available = process.get("available")
             process_available = available if isinstance(available, bool) else True
@@ -992,9 +1023,18 @@ class ClosingBackend:
                 process_tty = process_identity.get("tty") if process_identity else None
             protected = bool(process.get("protected"))
             foreground = process.get("foreground") if isinstance(process.get("foreground"), bool) else None
+            session_ended = bool(
+                process_available is True
+                and process.get("session_ended") is True
+                and not active_jobs
+                and not stopped_jobs
+                and not protected
+            )
         process_activity = "unknown"
         if process_available is True and (active_jobs or stopped_jobs):
             process_activity = "busy"
+        elif session_ended:
+            process_activity = "exited"
         elif process_available is True and jobs_explicit:
             # An empty census is useful evidence, but is not by itself an idle
             # proof when prompt/business evidence is absent.
@@ -1095,13 +1135,17 @@ class ClosingBackend:
             state = "unknown"
         blocked_code = _safe_blocker(probe.get("blocked_code") or cli_blocked)
         terminal_source = "unknown"
-        if process_activity == "busy":
+        if process_activity in {"busy", "exited"}:
             terminal_source = "process"
         elif prompt_state in {"editing", "running", "finished"}:
             terminal_source = "prompt"
         terminal_reason = _diagnostic_reason(
             probe.get("reason"),
-            "active_job_on_tty" if process_activity == "busy" else prompt_reason,
+            "active_job_on_tty"
+            if process_activity == "busy"
+            else "session_processes_exited"
+            if session_ended
+            else prompt_reason,
         )
         cli_recovery_ready = (
             cli_name is None
@@ -1113,7 +1157,9 @@ class ClosingBackend:
             )
         )
         process_identity_ready = (
-            process_available is True and process_identity is not None and not protected
+            process_available is True
+            and (process_identity is not None or session_ended)
+            and not protected
         )
         readiness_reason = blocked_code or terminal_reason
         if blocked_code or not cli_recovery_ready or not process_identity_ready:
@@ -1128,6 +1174,9 @@ class ClosingBackend:
             # must be rechecked by the closing path.
             readiness_status = "eligible_if_unchanged"
             readiness_reason = "idle_with_verified_process_and_recovery"
+        elif state == "exited" and session_ended:
+            readiness_status = "eligible_if_unchanged"
+            readiness_reason = "session_already_exited"
         elif state in {"busy", "exited"}:
             readiness_status = "blocked"
         else:
@@ -1320,7 +1369,17 @@ class ClosingBackend:
         # Positive process evidence is sufficient to say that the terminal is
         # busy even when prompt state is missing/unknown.  An empty process
         # census is intentionally not promoted to idle; prompt/business
-        # evidence is still required for that close-safe conclusion.
+        # evidence is still required for that close-safe conclusion.  However,
+        # when the process census positively proves that the session's TTY and
+        # root/job processes have all exited, the leftover pane is ``exited``.
+        session_ended = bool(
+            process_map is not None
+            and process_map.get("available") is not False
+            and process_map.get("session_ended") is True
+            and not active_jobs
+            and not stopped_jobs
+            and not protected
+        )
         if not protected and state == "unknown":
             if stopped_jobs:
                 state = "busy"
@@ -1328,6 +1387,9 @@ class ClosingBackend:
             elif active_jobs:
                 state = "busy"
                 reason = "active_job_on_tty"
+            elif session_ended and not cli_error and not cli_sessions:
+                state = "exited"
+                reason = "session_processes_exited"
 
         cli_map = _mapping(cli)
         # A process provider often reports the shell as the root identity and
@@ -1410,6 +1472,8 @@ class ClosingBackend:
         }
         if process_map is not None:
             result["process"] = dict(process_map)
+        if session_ended and state == "exited":
+            result["session_ended"] = True
         if foreground is not None:
             result["foreground"] = foreground
         if blocked_code:
@@ -1438,6 +1502,10 @@ class ClosingBackend:
             "cli_sessions": [dict(item) for item in (probe.get("cli_sessions") or ()) if isinstance(item, Mapping)],
             "process_scope": scope,
             "job_identities": jobs,
+            "session_ended": bool(
+                probe.get("session_ended") is True
+                or (_process_item(probe.get("process")) or {}).get("session_ended") is True
+            ),
             "result": dict(result),
         }
 
@@ -1517,27 +1585,49 @@ class ClosingBackend:
             probe = merged_probe
         state = str(probe.get("state", "unknown")).lower()
         cli_sessions = list(probe.get("cli_sessions") or ())
-        if state == "exited":
-            raise DomainError("SESSION_GONE", "session already exited")
+        session_ended = bool(
+            probe.get("session_ended") is True
+            or (_process_item(probe.get("process")) or {}).get("session_ended") is True
+        )
         if probe.get("blocked_code") == "SELF_PROTECTION":
-            raise DomainError("SELF_PROTECTION", "target is an ancestor of the MCP process")
+            raise _mark_side_effect_not_attempted(
+                DomainError("SELF_PROTECTION", "target is an ancestor of the MCP process")
+            )
+        if state == "exited":
+            if session_ended and not cli_sessions:
+                result = {"cli_exit_status": "not_needed", "task_interrupted": False, "force": bool(force)}
+                self._remember_exit_proof(normalized, probe, result)
+                return result
+            raise _mark_side_effect_not_attempted(
+                DomainError("SESSION_GONE", "session already exited")
+            )
         if not force and state != "idle":
             code = "ACTIVITY_UNKNOWN" if state == "unknown" else "ACTIVITY_BLOCKED"
-            raise DomainError(code, str(probe.get("reason") or code))
+            raise _mark_side_effect_not_attempted(
+                DomainError(code, str(probe.get("reason") or code))
+            )
         if state == "unknown" and not force and not cli_sessions:
-            raise DomainError("ACTIVITY_UNKNOWN", str(probe.get("reason") or "activity is unknown"))
+            raise _mark_side_effect_not_attempted(
+                DomainError("ACTIVITY_UNKNOWN", str(probe.get("reason") or "activity is unknown"))
+            )
 
         if cli_sessions:
             adapter = self.cli_adapter
             if adapter is None:
-                raise DomainError("CLI_RECOVERY_UNAVAILABLE", "recognized CLI has no exit adapter")
+                raise _mark_side_effect_not_attempted(
+                    DomainError("CLI_RECOVERY_UNAVAILABLE", "recognized CLI has no exit adapter")
+                )
             for item in cli_sessions:
                 item_map = _mapping(item)
                 if item_map is None:
-                    raise DomainError("CLI_IDENTITY_UNKNOWN", "CLI identity is malformed")
+                    raise _mark_side_effect_not_attempted(
+                        DomainError("CLI_IDENTITY_UNKNOWN", "CLI identity is malformed")
+                    )
                 chat_uuid = item_map.get("chat_uuid", item_map.get("uuid", item_map.get("id")))
                 if not isinstance(chat_uuid, str) or not chat_uuid.strip():
-                    raise DomainError("CLI_IDENTITY_UNKNOWN", "chat UUID is required before CLI exit")
+                    raise _mark_side_effect_not_attempted(
+                        DomainError("CLI_IDENTITY_UNKNOWN", "chat UUID is required before CLI exit")
+                    )
             method = None
             for name in ("exit_session", "exit", "shutdown"):
                 candidate = getattr(adapter, name, None)
@@ -1545,7 +1635,9 @@ class ClosingBackend:
                     method = candidate
                     break
             if method is None:
-                raise DomainError("CLI_RECOVERY_UNAVAILABLE", "CLI adapter cannot exit a session")
+                raise _mark_side_effect_not_attempted(
+                    DomainError("CLI_RECOVERY_UNAVAILABLE", "CLI adapter cannot exit a session")
+                )
             try:
                 value = await _invoke_compatible(
                     method,
@@ -1624,21 +1716,31 @@ class ClosingBackend:
             return result
         process = _process_item(probe.get("process"))
         if process is None:
-            raise DomainError("INTERRUPT_UNSUPPORTED", "no process evidence for forced interruption")
+            raise _mark_side_effect_not_attempted(
+                DomainError("INTERRUPT_UNSUPPORTED", "no process evidence for forced interruption")
+            )
         identity = _stable_identity(probe.get("identity"))
         if identity is None:
-            raise DomainError("PROCESS_IDENTITY_UNKNOWN", "forced interruption needs a stable process identity")
+            raise _mark_side_effect_not_attempted(
+                DomainError("PROCESS_IDENTITY_UNKNOWN", "forced interruption needs a stable process identity")
+            )
         if process.get("protected"):
-            raise DomainError("SELF_PROTECTION", "target process is protected")
+            raise _mark_side_effect_not_attempted(
+                DomainError("SELF_PROTECTION", "target process is protected")
+            )
         active, stopped, explicit = _record_active_jobs(process)
         if not explicit:
-            raise DomainError("ACTIVE_JOB_UNKNOWN", "foreground job evidence is unavailable")
+            raise _mark_side_effect_not_attempted(
+                DomainError("ACTIVE_JOB_UNKNOWN", "foreground job evidence is unavailable")
+            )
         if active or stopped:
             _scope, job_identities = _stable_process_scope(probe)
             if len(job_identities) < len(active) + len(stopped):
-                raise DomainError(
-                    "PROCESS_IDENTITY_UNKNOWN",
-                    "every observed foreground job needs a stable PID/start identity",
+                raise _mark_side_effect_not_attempted(
+                    DomainError(
+                        "PROCESS_IDENTITY_UNKNOWN",
+                        "every observed foreground job needs a stable PID/start identity",
+                    )
                 )
         if not active and not stopped:
             # ``force`` bypasses an unavailable prompt state when the process
@@ -1648,15 +1750,21 @@ class ClosingBackend:
                 result = {"cli_exit_status": "not_needed", "task_interrupted": False, "force": True}
                 self._remember_exit_proof(normalized, probe, result)
                 return result
-            raise DomainError("ACTIVE_JOB_UNKNOWN", "foreground job evidence is unavailable")
+            raise _mark_side_effect_not_attempted(
+                DomainError("ACTIVE_JOB_UNKNOWN", "foreground job evidence is unavailable")
+            )
         if probe.get("foreground") is not True and process.get("foreground") is not True:
-            raise DomainError("FOREGROUND_REQUIRED", "forced interruption requires the targeted foreground job")
+            raise _mark_side_effect_not_attempted(
+                DomainError("FOREGROUND_REQUIRED", "forced interruption requires the targeted foreground job")
+            )
         provider = self.process_provider
         interrupt = getattr(provider, "interrupt_foreground", None)
         if interrupt is None:
             interrupt = getattr(provider, "interrupt", None)
         if interrupt is None:
-            raise DomainError("INTERRUPT_UNSUPPORTED", "no targeted interruption adapter is installed")
+            raise _mark_side_effect_not_attempted(
+                DomainError("INTERRUPT_UNSUPPORTED", "no targeted interruption adapter is installed")
+            )
         try:
             value = await _invoke_compatible(
                 interrupt,
@@ -1777,10 +1885,19 @@ class ClosingBackend:
             fresh = await self.probe(row)
             if fresh.get("blocked_code"):
                 raise DomainError(str(fresh["blocked_code"]), "fresh close preflight is blocked")
-            if fresh.get("state") != "idle":
+            process = _process_item(fresh.get("process"))
+            active, stopped, explicit = _record_active_jobs(process or {})
+            fresh_ended = bool(
+                fresh.get("state") == "exited"
+                and (
+                    fresh.get("session_ended") is True
+                    or (process or {}).get("session_ended") is True
+                )
+                and not active
+                and not stopped
+            )
+            if fresh.get("state") != "idle" and not fresh_ended:
                 proof_result = (proof or {}).get("result", {})
-                process = _process_item(fresh.get("process"))
-                active, stopped, explicit = _record_active_jobs(process or {})
                 identity_ok = _stable_identity(fresh.get("identity")) == (proof or {}).get("identity")
                 force_idle_unknown = (
                     fresh.get("state") == "unknown"
@@ -1812,9 +1929,11 @@ class ClosingBackend:
                 fresh_identity = _stable_identity(fresh.get("identity"))
                 if expected_identity is not None and fresh_identity is None:
                     # A CLI process may legitimately disappear after a
-                    # verified exit; an empty CLI list is the evidence that it
-                    # did not get replaced by another agent.
-                    if not proof.get("cli_sessions"):
+                    # verified exit, or an idle shell may finish exiting into
+                    # an ended pane right before native close; an empty CLI
+                    # list (plus positive ended-session evidence for non-CLI
+                    # rows) proves it did not get replaced by another agent.
+                    if not proof.get("cli_sessions") and not fresh_ended:
                         raise DomainError("PROCESS_IDENTITY_CHANGED", "target process identity disappeared")
                 elif expected_identity is not None and fresh_identity != expected_identity:
                     if not proof.get("cli_sessions"):
@@ -1944,21 +2063,30 @@ class ClosingBackend:
         except Exception as exc:
             raise _error_from_exception("CLOSE", exc) from exc
 
-        await self._refresh_app()
-        remaining = await self.snapshot()
-        if any(self._target_membership(kind, row, target_id) for row in remaining):
-            raise DomainError("CLOSE_UNVERIFIED", f"{kind} target remains after close acknowledgement")
-        app = self._app()
-        if app is not None:
-            getter_name = {"session": "get_session_by_id", "tab": "get_tab_by_id", "window": "get_window_by_id"}[kind]
-            getter = getattr(app, getter_name, None)
-            if getter is not None:
-                try:
-                    value = await _maybe_await(getter(target_id))
-                except Exception:
-                    value = None
-                if value is not None:
-                    raise DomainError("CLOSE_UNVERIFIED", f"{kind} object remains after refresh")
+        getter_name = {"session": "get_session_by_id", "tab": "get_tab_by_id", "window": "get_window_by_id"}[kind]
+        loop = asyncio.get_running_loop()
+        deadline = loop.time() + _CLOSE_VERIFY_WINDOW
+        while True:
+            await self._refresh_app()
+            remaining = await self.snapshot()
+            still_in_snapshot = any(self._target_membership(kind, row, target_id) for row in remaining)
+            still_in_app = False
+            if not still_in_snapshot:
+                app = self._app()
+                getter = getattr(app, getter_name, None) if app is not None else None
+                if getter is not None:
+                    try:
+                        value = await _maybe_await(getter(target_id))
+                    except Exception:
+                        value = None
+                    still_in_app = value is not None
+            if not still_in_snapshot and not still_in_app:
+                break
+            if loop.time() >= deadline:
+                if still_in_snapshot:
+                    raise DomainError("CLOSE_UNVERIFIED", f"{kind} target remains after close acknowledgement")
+                raise DomainError("CLOSE_UNVERIFIED", f"{kind} object remains after refresh")
+            await asyncio.sleep(_CLOSE_VERIFY_INTERVAL)
 
 
 __all__ = ["ClosingBackend"]

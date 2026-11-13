@@ -346,21 +346,31 @@ class MacOSProcessProvider:
             return None
         process_info = row.get("process") if isinstance(row, Mapping) else None
         job_pid: int | None = None
+        root_pid: int | None = None
         if isinstance(process_info, Mapping):
             job_pid = _positive_pid(
                 process_info.get("pid") or process_info.get("job_pid")
             )
+            root_pid = _positive_pid(process_info.get("root_pid"))
         if job_pid is None and isinstance(row, Mapping):
             job_pid = _positive_pid(
                 row.get("job_pid")
                 or row.get("jobPid")
                 or _nested_value(row.get("context"), "job_pid")
             )
+        if root_pid is None and isinstance(row, Mapping):
+            root_pid = _positive_pid(
+                row.get("root_pid")
+                or row.get("pid")
+                or _nested_value(row.get("context"), "root_pid")
+            )
         records = self.list_processes()
         if not records:
             return None
         by_pid = {record.pid: record for record in records}
-        target = by_pid.get(job_pid) if job_pid is not None else None
+        effective_pid = job_pid if job_pid is not None else root_pid
+        target = by_pid.get(effective_pid) if effective_pid is not None else None
+        root_target = by_pid.get(root_pid) if root_pid is not None else None
         target_is_shell = bool(
             target is not None
             and target.executable
@@ -375,7 +385,7 @@ class MacOSProcessProvider:
             return {
                 "available": False,
                 "identity": target.identity.as_dict() if target is not None else None,
-                "pid": target.pid if target is not None else job_pid,
+                "pid": target.pid if target is not None else effective_pid,
                 "tty": None,
             }
         shell_names = {"sh", "bash", "zsh", "fish", "dash", "ksh", "tcsh", "csh", "pwsh", "powershell"}
@@ -396,8 +406,10 @@ class MacOSProcessProvider:
                 target = leaders[0]
             elif len(foreground_jobs) == 1:
                 target = foreground_jobs[0]
-        candidate_ids = self._descendants(job_pid, records) if job_pid is not None else set()
-        shell_pid = job_pid if target_is_shell else None
+        candidate_ids = self._descendants(effective_pid, records) if effective_pid is not None else set()
+        if root_pid is not None and root_pid != effective_pid:
+            candidate_ids |= self._descendants(root_pid, records)
+        shell_pid = effective_pid if target_is_shell else None
         if shell_pid is None and target is not None:
             # jobPid can point at the foreground program rather than the
             # shell.  Walk its observed ancestry to identify the shell root.
@@ -459,7 +471,11 @@ class MacOSProcessProvider:
         for record in records:
             if record.exited:
                 continue
-            descendant = record.pid in candidate_ids or record.pid == job_pid
+            descendant = (
+                record.pid in candidate_ids
+                or record.pid == effective_pid
+                or (root_pid is not None and record.pid == root_pid)
+            )
             # A descendant remains owned by this terminal session even after
             # it calls setsid/detaches and loses the shell TTY.  Same-TTY
             # processes outside the descendant set are still treated as
@@ -493,10 +509,17 @@ class MacOSProcessProvider:
                 }
             )
         identity = target.identity.as_dict() if target is not None else None
-        return {
+        session_ended = bool(
+            tty is not None
+            and not candidates
+            and not any(not record.exited and record.tty == tty for record in records)
+            and (target is None or target.exited)
+            and (root_target is None or root_target.exited)
+        )
+        evidence: dict[str, Any] = {
             "available": True,
             "identity": identity,
-            "pid": target.pid if target is not None else job_pid,
+            "pid": target.pid if target is not None else effective_pid,
             "tty": tty,
             "foreground": target.foreground if target is not None else None,
             "active_jobs": [record.as_dict() for record in active],
@@ -510,6 +533,10 @@ class MacOSProcessProvider:
             "processes": [record.as_dict() for record in candidates],
             "ignored_ancestors": ignored_ancestors,
         }
+        if session_ended:
+            evidence["session_ended"] = True
+            evidence["reason"] = "session_processes_exited"
+        return evidence
 
     def _record_for_identity(
         self,

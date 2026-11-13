@@ -269,6 +269,20 @@ class CliRecoveryLifecycleTests(unittest.TestCase):
 
         self.assertEqual(ctx.exception.side_effect_status, "unknown")
 
+    def test_pre_sigint_refusal_marks_side_effect_not_attempted(self):
+        adapter = CliRecoveryAdapter(runner=ProcessEvidenceRunner(opened=""))
+        probe = {
+            "state": "busy",
+            "identity": None,
+            "cli_sessions": [{"cli": "claude", "chat_uuid": CHAT, "identity_status": "verified"}],
+        }
+        with mock.patch("goals_iterm_mcp.cli_recovery.os.kill") as kill:
+            with self.assertRaises(RuntimeError) as ctx:
+                adapter.exit_session({"session_id": "s1"}, probe, force=True)
+
+        kill.assert_not_called()
+        self.assertEqual(getattr(ctx.exception, "side_effect_status", None), "not_attempted")
+
 
 if __name__ == "__main__":
     unittest.main()

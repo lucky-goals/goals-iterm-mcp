@@ -9,7 +9,9 @@ import stat
 import tempfile
 import unittest
 from pathlib import Path
+from unittest import mock
 
+import goals_iterm_mcp.closing as closing_module
 from goals_iterm_mcp.closing import CloseService, RecoveryStore
 from goals_iterm_mcp.errors import DomainError
 
@@ -487,6 +489,95 @@ class ClosingTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(result["unknown_sessions"][0]["closure_status"], "unknown")
         self.assertEqual(result["unknown_sessions"][0]["reason"], "INTERRUPT_UNVERIFIED")
         self.assertFalse(any(item[0] == "close" for item in backend.calls))
+
+    async def test_ended_session_pane_closes_without_force_and_updates_receipt_sessions(self):
+        ended_probe = {
+            "state": "exited",
+            "reason": "session_processes_exited",
+            "identity": None,
+            "cli_sessions": [],
+            "session_ended": True,
+        }
+        backend = FakeBackend([row("s1", window="w9")], {"s1": ended_probe})
+        with tempfile.TemporaryDirectory() as directory:
+            result = await CloseService(backend, store=RecoveryStore(directory)).run(
+                "window", window_id="w9", force=False
+            )
+            receipt = json.loads(Path(result["recovery_record_path"]).read_text())
+
+        self.assertEqual(result["status"], "closed")
+        self.assertEqual(result["closed_sessions"][0]["session_id"], "s1")
+        self.assertEqual(receipt["sessions"][0]["closure_status"], "closed")
+        self.assertEqual(receipt["sessions"][0]["exit"], "not_needed")
+        self.assertEqual(receipt["sessions"][0]["interruption"], "not_interrupted")
+
+    async def test_unknown_activity_reports_activity_unknown_and_preserves_probe_reason(self):
+        backend = FakeBackend(
+            [row("s1")],
+            {"s1": idle_probe(state="unknown", reason="prompt_unavailable")},
+        )
+        result = await CloseService(backend, store=RecoveryStore(tempfile.mkdtemp())).run(
+            "session", session_id="s1", force=False
+        )
+
+        self.assertEqual(result["status"], "refused")
+        self.assertEqual(result["code"], "ACTIVITY_UNKNOWN")
+        self.assertEqual(result["failed_sessions"][0]["reason"], "ACTIVITY_UNKNOWN")
+        self.assertEqual(result["failed_sessions"][0]["probe_reason"], "prompt_unavailable")
+        self.assertFalse(any(item[0] in {"exit", "close"} for item in backend.calls))
+
+    async def test_pre_signal_unknown_error_keeps_interruption_not_attempted(self):
+        class PreSignalRefusalBackend(FakeBackend):
+            async def exit_session(self, current, probe, force):
+                error = DomainError("PROCESS_IDENTITY_UNKNOWN", "missing pid before signal")
+                error.side_effect_status = "not_attempted"
+                raise error
+
+        backend = PreSignalRefusalBackend(
+            [row("s1")],
+            {"s1": idle_probe(state="busy", identity=None)},
+        )
+        with tempfile.TemporaryDirectory() as directory:
+            result = await CloseService(backend, store=RecoveryStore(directory)).run(
+                "session", session_id="s1", force=True
+            )
+            receipt = json.loads(Path(result["recovery_record_path"]).read_text())
+
+        self.assertEqual(result["status"], "partial")
+        self.assertEqual(result["unknown_sessions"], [])
+        self.assertEqual(result["failed_sessions"][0]["interruption"], "not_attempted")
+        self.assertEqual(result["failed_sessions"][0]["closure_status"], "failed")
+        self.assertEqual(result["failed_sessions"][0]["reason"], "PROCESS_IDENTITY_UNKNOWN")
+        self.assertEqual(receipt["sessions"][0]["interruption"], "not_attempted")
+        self.assertEqual(receipt["sessions"][0]["closure_status"], "failed")
+
+    async def test_total_timeout_preserves_recovery_receipt_and_partial_outcomes(self):
+        class SlowSecondSessionBackend(FakeBackend):
+            async def exit_session(self, current, probe, force):
+                if current["session_id"] == "s1":
+                    value = await super().exit_session(current, probe, force)
+                    self.rows = [item for item in self.rows if item["session_id"] != "s1"]
+                    return value
+                self.calls.append(("exit", current["session_id"], force))
+                await asyncio.Future()
+
+        backend = SlowSecondSessionBackend(
+            [row("s1", name="one"), row("s2", name="two")],
+            {"s1": idle_probe(), "s2": idle_probe()},
+        )
+        with tempfile.TemporaryDirectory() as directory:
+            with mock.patch.object(closing_module, "TOTAL_TIMEOUT", 0.05):
+                result = await CloseService(backend, store=RecoveryStore(directory)).run("all")
+            self.assertIsNotNone(result["recovery_record_id"])
+            self.assertIsNotNone(result["recovery_record_path"])
+            receipt = json.loads(Path(result["recovery_record_path"]).read_text())
+
+        self.assertEqual(result["status"], "unknown")
+        self.assertEqual(result["code"], "TIMEOUT")
+        self.assertEqual(result["unknown_sessions"][0]["session_id"], "s2")
+        self.assertEqual(result["unknown_sessions"][0]["reason"], "TIMEOUT")
+        self.assertEqual(receipt["status"], "unknown")
+        self.assertTrue(any(step.get("step") == "timeout" for step in receipt["steps"]))
 
 
 if __name__ == "__main__":

@@ -93,6 +93,12 @@ class ExitOutcomeUnknown(RuntimeError):
     side_effect_status = "unknown"
 
 
+class _PreExitRefusalError(RuntimeError):
+    """The CLI exit preconditions failed before any signal was delivered."""
+
+    side_effect_status = "not_attempted"
+
+
 def normalize_cli(value: Any) -> str | None:
     """Map executable/context names to the four supported CLI names."""
 
@@ -1361,13 +1367,13 @@ class CliRecoveryAdapter:
         """
 
         if not isinstance(probe, Mapping):
-            raise RuntimeError("CLI identity evidence is unavailable")
+            raise _PreExitRefusalError("CLI identity evidence is unavailable")
         blocked_code = probe.get("blocked_code")
         if isinstance(blocked_code, str) and blocked_code in _IDENTITY_BLOCK_CODES:
-            raise RuntimeError(f"CLI identity evidence is blocked: {blocked_code}")
+            raise _PreExitRefusalError(f"CLI identity evidence is blocked: {blocked_code}")
         cli_sessions = probe.get("cli_sessions")
         if not isinstance(cli_sessions, Sequence) or isinstance(cli_sessions, (str, bytes)) or not cli_sessions:
-            raise RuntimeError("CLI identity is required before exit")
+            raise _PreExitRefusalError("CLI identity is required before exit")
         session_id = row.get("session_id") if isinstance(row, Mapping) else None
         binding = self._bindings.get(session_id) if isinstance(session_id, str) else None
         if binding is not None and binding.chat is not None:
@@ -1405,35 +1411,35 @@ class CliRecoveryAdapter:
                     or not probe_ids
                     or refreshed_ids != probe_ids
                 ):
-                    raise RuntimeError(
+                    raise _PreExitRefusalError(
                         "registered CLI identity was not verified by current process evidence"
                     )
         identity = probe.get("identity") if isinstance(probe, Mapping) else None
         if not isinstance(identity, Mapping):
-            raise RuntimeError("stable process identity is required before exit")
+            raise _PreExitRefusalError("stable process identity is required before exit")
         try:
             pid = int(identity.get("pid"))
         except (TypeError, ValueError):
-            raise RuntimeError("stable process identity is required before exit") from None
+            raise _PreExitRefusalError("stable process identity is required before exit") from None
         expected_start = identity.get("start_time", identity.get("start"))
         if pid <= 0 or not isinstance(expected_start, str) or not expected_start:
-            raise RuntimeError("stable process identity is required before exit")
+            raise _PreExitRefusalError("stable process identity is required before exit")
         if pid in _self_and_ancestors(self.runner):
-            raise RuntimeError("target process is an MCP process ancestor")
+            raise _PreExitRefusalError("target process is an MCP process ancestor")
         if not self._current_identity(pid, expected_start):
-            raise RuntimeError("target process identity changed before CLI exit")
+            raise _PreExitRefusalError("target process identity changed before CLI exit")
         scope = _probe_process_scope(probe)
         if scope is None:
-            raise RuntimeError("pre-signal process identity scope is unavailable")
+            raise _PreExitRefusalError("pre-signal process identity scope is unavailable")
         if not _process_scope_current(scope, self.runner):
-            raise RuntimeError("a scoped CLI process identity changed before exit")
+            raise _PreExitRefusalError("a scoped CLI process identity changed before exit")
         verified_processes = [
             {"pid": scoped_pid, "start": scoped_start, "start_time": scoped_start}
             for scoped_pid, scoped_start in scope
         ]
         state = str(probe.get("state") or "unknown").casefold()
         if not force and state != "idle":
-            raise RuntimeError("CLI activity is not idle")
+            raise _PreExitRefusalError("CLI activity is not idle")
 
         def exit_result() -> dict[str, Any]:
             return {

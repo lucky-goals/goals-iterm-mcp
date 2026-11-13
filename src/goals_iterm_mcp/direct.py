@@ -300,7 +300,7 @@ class ItermTools:
             else:
                 adapter = self._closing_backend
                 if adapter is None:
-                    adapter = ClosingBackend(self.backend)
+                    adapter = ClosingBackend(self.backend, allowed=self.allowed)
                     self._closing_backend = adapter
                 payload = await CloseService(
                     adapter, allowed=self.allowed, store=self._recovery_store
