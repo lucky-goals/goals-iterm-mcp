@@ -38,9 +38,13 @@ jobs:
           import os, tomllib
           from pathlib import Path
           version = tomllib.loads(Path('pyproject.toml').read_text())['project']['version']
+          expected = {f'v{version}'}
+          if '.dev' in version:
+              base, dev_suffix = version.split('.dev', 1)
+              expected.add(f'v{base}-dev' if dev_suffix == '0' else f'v{base}-dev{dev_suffix}')
           tag = os.environ['RELEASE_TAG']
-          if tag and tag != f'v{version}':
-              raise SystemExit(f'Release tag {tag!r} does not match v{version}')
+          if tag and tag not in expected:
+              raise SystemExit(f'Release tag {tag!r} does not match {sorted(expected)}')
           PY
       - name: Install build tools
         run: python -m pip install build twine

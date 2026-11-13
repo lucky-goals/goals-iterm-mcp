@@ -1,6 +1,6 @@
 # Terminal closing tools — implementation contract
 
-Status: implementation specification for goals-iterm-mcp 0.2.2, 2026-10-26. This
+Status: implementation specification for goals-iterm-mcp 0.2.3.dev0 (v0.2.3-dev), 2026-11-14. This
 supersedes the earlier proposal that `clean_all_sessions` refused the entire
 request when one session was busy. The four closing tools were first introduced
 in version 0.2.0.
@@ -8,8 +8,8 @@ in version 0.2.0.
 ## Read-only capability audit
 
 The 0.2.1 package also registers the read-only `inspect_sessions` diagnostic.
-It is included alongside the four closing tools. The complete package exposes
-13 tools, including four read-only tools: `list_sessions`, `read_screen`,
+It is included alongside the four closing tools. The complete 0.2.3.dev0 package exposes
+14 tools (including `activate_session`), including four read-only tools: `list_sessions`, `read_screen`,
 `read_history`, and `inspect_sessions`.
 
 Public signature:
