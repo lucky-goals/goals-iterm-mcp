@@ -20,6 +20,7 @@ from __future__ import annotations
 import asyncio
 import importlib
 import inspect
+from itertools import islice
 import sys
 import uuid
 from collections.abc import Callable, Iterable, Mapping, Sequence
@@ -34,6 +35,10 @@ _MISSING = object()
 _KINDS = {"session", "tab", "window"}
 _STATES = {"idle", "busy", "unknown", "exited"}
 _CLI_ACTIVITY_STATES = {"idle", "busy", "waiting", "unknown", "exited"}
+_MAX_DIAGNOSTIC_JOBS = 32
+_MAX_DIAGNOSTIC_IGNORED_ANCESTORS = 8
+_LOGIN_ANCESTOR_CLASSIFICATION = "verified_login_ancestor"
+_LOGIN_ANCESTOR_REASON = "stable_same_tty_direct_parent_of_shell"
 _KNOWN_DIAGNOSTIC_CODES = frozenset(
     {
         "CLI_IDENTITY_AMBIGUOUS",
@@ -124,9 +129,17 @@ def _safe_identity(value: Any) -> dict[str, Any] | None:
     identity = _stable_identity(value)
     if identity is None:
         return None
-    result: dict[str, Any] = {"pid": int(identity["pid"]), "start": str(identity["start"])}
+    start = str(identity["start"])
+    if len(start) > 128 or any(ord(char) < 32 or ord(char) == 127 for char in start):
+        return None
+    result: dict[str, Any] = {"pid": int(identity["pid"]), "start": start}
     tty = identity.get("tty")
-    if isinstance(tty, str) and tty and len(tty) <= 96:
+    if (
+        isinstance(tty, str)
+        and tty
+        and len(tty) <= 96
+        and all(ord(char) >= 32 and ord(char) != 127 for char in tty)
+    ):
         result["tty"] = tty
     return result
 
@@ -384,6 +397,60 @@ def _record_active_jobs(process_info: Mapping[str, Any]) -> tuple[list[Any], lis
     return active_values, stopped_values, explicit
 
 
+def _diagnostic_jobs(items: Sequence[Any], *, classification: str) -> list[dict[str, Any]]:
+    """Project bounded job evidence without exposing command or environment data."""
+
+    result: list[dict[str, Any]] = []
+    for item in items[:_MAX_DIAGNOSTIC_JOBS]:
+        item_map = _process_item(item)
+        if item_map is None:
+            item_map = {}
+        identity = _safe_identity(item_map.get("identity") or item_map)
+        program = _safe_token(item_map.get("executable", item_map.get("program")))
+        foreground = item_map.get("foreground")
+        result.append(
+            {
+                "identity": identity,
+                "identity_status": "stable" if identity is not None else "unavailable",
+                "program": program,
+                "classification": classification,
+                "foreground": foreground if isinstance(foreground, bool) else None,
+            }
+        )
+    return result
+
+
+def _diagnostic_ignored_ancestors(process_info: Mapping[str, Any]) -> tuple[list[dict[str, Any]], bool]:
+    """Return only a verified login-parent record and its fixed classification."""
+
+    raw = process_info.get("ignored_ancestors")
+    if not isinstance(raw, Iterable) or isinstance(raw, (str, bytes, Mapping)):
+        return [], False
+    values = list(islice(raw, _MAX_DIAGNOSTIC_IGNORED_ANCESTORS + 1))
+    result: list[dict[str, Any]] = []
+    for item in values[:_MAX_DIAGNOSTIC_IGNORED_ANCESTORS]:
+        item_map = _process_item(item)
+        if item_map is None:
+            continue
+        identity = _safe_identity(item_map.get("identity"))
+        if (
+            identity is None
+            or _safe_token(item_map.get("executable")) != "login"
+            or item_map.get("classification") != _LOGIN_ANCESTOR_CLASSIFICATION
+            or item_map.get("classification_reason") != _LOGIN_ANCESTOR_REASON
+        ):
+            continue
+        result.append(
+            {
+                "identity": identity,
+                "executable": "login",
+                "classification": _LOGIN_ANCESTOR_CLASSIFICATION,
+                "classification_reason": _LOGIN_ANCESTOR_REASON,
+            }
+        )
+    return result, len(values) > _MAX_DIAGNOSTIC_IGNORED_ANCESTORS
+
+
 def _stable_process_scope(probe: Mapping[str, Any]) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
     """Return stable identities for the observed process tree and jobs.
 
@@ -441,7 +508,21 @@ def _error_from_exception(prefix: str, exc: BaseException) -> DomainError:
         code = f"{prefix}_GONE"
     else:
         code = f"{prefix}_FAILED"
-    return DomainError(code, text or code)
+    error = DomainError(code, text or code)
+    side_effect_status = getattr(exc, "side_effect_status", None)
+    if side_effect_status in {"not_attempted", "attempted", "unknown"}:
+        error.side_effect_status = side_effect_status
+    return error
+
+
+def _mark_side_effect_unknown(error: BaseException) -> BaseException:
+    """Carry uncertain signal/exit delivery through the domain error layer."""
+
+    try:
+        error.side_effect_status = "unknown"
+    except Exception:
+        pass
+    return error
 
 
 async def _invoke_compatible(
@@ -880,6 +961,11 @@ class ClosingBackend:
         jobs_explicit = False
         if process is not None:
             active_jobs, stopped_jobs, jobs_explicit = _record_active_jobs(process)
+        active_job_details = _diagnostic_jobs(active_jobs, classification="active_job")
+        stopped_job_details = _diagnostic_jobs(stopped_jobs, classification="stopped_job")
+        ignored_ancestors, ignored_ancestors_truncated = (
+            _diagnostic_ignored_ancestors(process) if process is not None else ([], False)
+        )
         # A missing process record is an explicit unavailable observation, not
         # an unknown value that a caller could mistake for an idle process.
         process_available = False
@@ -897,7 +983,12 @@ class ClosingBackend:
             )
             process_identity = _safe_identity(process.get("identity") or process)
             process_tty = process.get("tty")
-            if not isinstance(process_tty, str) or not process_tty or len(process_tty) > 96:
+            if (
+                not isinstance(process_tty, str)
+                or not process_tty
+                or len(process_tty) > 96
+                or any(ord(char) < 32 or ord(char) == 127 for char in process_tty)
+            ):
                 process_tty = process_identity.get("tty") if process_identity else None
             protected = bool(process.get("protected"))
             foreground = process.get("foreground") if isinstance(process.get("foreground"), bool) else None
@@ -1072,7 +1163,13 @@ class ClosingBackend:
                 "identity": process_identity,
                 "tty": process_tty,
                 "active_job_count": len(active_jobs),
+                "active_jobs": active_job_details,
+                "active_jobs_truncated": len(active_jobs) > _MAX_DIAGNOSTIC_JOBS,
                 "stopped_job_count": len(stopped_jobs),
+                "stopped_jobs": stopped_job_details,
+                "stopped_jobs_truncated": len(stopped_jobs) > _MAX_DIAGNOSTIC_JOBS,
+                "ignored_ancestors": ignored_ancestors,
+                "ignored_ancestors_truncated": ignored_ancestors_truncated,
                 "activity": process_activity,
                 "protected": protected,
                 "foreground": foreground,
@@ -1470,9 +1567,15 @@ class ClosingBackend:
             if status is None and result.get("exited") is True:
                 status = "exited"
             if status != "exited":
-                raise DomainError("CLI_EXIT_FAILED", str(result.get("reason") or "CLI exit was not verified"))
+                error = DomainError("CLI_EXIT_FAILED", str(result.get("reason") or "CLI exit was not verified"))
+                if result.get("task_interrupted") is True or result.get("side_effect_status") == "unknown":
+                    _mark_side_effect_unknown(error)
+                raise error
             if result.get("verified") is False:
-                raise DomainError("CLI_EXIT_UNVERIFIED", "CLI adapter did not verify exit")
+                error = DomainError("CLI_EXIT_UNVERIFIED", "CLI adapter did not verify exit")
+                if result.get("task_interrupted") is True or result.get("side_effect_status") == "unknown":
+                    _mark_side_effect_unknown(error)
+                raise error
             process_info = _process_item(probe.get("process"))
             if process_info is not None:
                 active_jobs, stopped_jobs, _ = _record_active_jobs(process_info)
@@ -1497,12 +1600,18 @@ class ClosingBackend:
                     except asyncio.CancelledError:
                         raise
                     except Exception as exc:
-                        raise _error_from_exception("CLI_EXIT", exc) from exc
+                        error = _error_from_exception("CLI_EXIT", exc)
+                        if result.get("task_interrupted") is True:
+                            _mark_side_effect_unknown(error)
+                        raise error from exc
                     if not process_verified:
-                        raise DomainError(
+                        error = DomainError(
                             "CLI_EXIT_UNVERIFIED",
                             "an observed CLI child process remains after exit",
                         )
+                        if result.get("task_interrupted") is True:
+                            _mark_side_effect_unknown(error)
+                        raise error
             result["cli_exit_status"] = "exited"
             result["task_interrupted"] = bool(result.get("task_interrupted", force))
             result["force"] = bool(force)
@@ -1564,15 +1673,19 @@ class ClosingBackend:
         except Exception as exc:
             raise _error_from_exception("INTERRUPT", exc) from exc
         if isinstance(value, Mapping) and value.get("verified") is False:
-            raise DomainError("INTERRUPT_UNVERIFIED", "targeted interruption was not verified")
+            raise _mark_side_effect_unknown(
+                DomainError("INTERRUPT_UNVERIFIED", "targeted interruption was not verified")
+            )
         try:
             verified = await self._verify_interrupt(normalized, probe)
         except asyncio.CancelledError:
             raise
         except Exception as exc:
-            raise _error_from_exception("INTERRUPT", exc) from exc
+            raise _mark_side_effect_unknown(_error_from_exception("INTERRUPT", exc)) from exc
         if not verified:
-            raise DomainError("INTERRUPT_UNVERIFIED", "targeted interruption did not reach completion")
+            raise _mark_side_effect_unknown(
+                DomainError("INTERRUPT_UNVERIFIED", "targeted interruption did not reach completion")
+            )
         # Refresh topology before re-probing.  iTerm can remove a session
         # automatically as soon as its last process exits; probing the stale
         # cached Session in that interval produces false ``unknown`` evidence.
@@ -1584,7 +1697,7 @@ class ClosingBackend:
         except asyncio.CancelledError:
             raise
         except Exception as exc:
-            raise _error_from_exception("INTERRUPT", exc) from exc
+            raise _mark_side_effect_unknown(_error_from_exception("INTERRUPT", exc)) from exc
         refreshed = next(
             (
                 candidate
@@ -1603,7 +1716,9 @@ class ClosingBackend:
             return result
         for key in ("window_id", "tab_id", "target"):
             if refreshed.get(key) != normalized.get(key):
-                raise DomainError("TARGET_CHANGED", "session identity changed after interruption")
+                raise _mark_side_effect_unknown(
+                    DomainError("TARGET_CHANGED", "session identity changed after interruption")
+                )
 
         # Re-probe after the targeted process has disappeared.  The first
         # proof referred to the interrupted foreground PID; an idle shell
@@ -1615,14 +1730,18 @@ class ClosingBackend:
         except asyncio.CancelledError:
             raise
         except Exception as exc:
-            raise _error_from_exception("INTERRUPT", exc) from exc
+            raise _mark_side_effect_unknown(_error_from_exception("INTERRUPT", exc)) from exc
         if post_probe.get("blocked_code"):
-            raise DomainError(str(post_probe["blocked_code"]), "post-interrupt process evidence is blocked")
+            raise _mark_side_effect_unknown(
+                DomainError(str(post_probe["blocked_code"]), "post-interrupt process evidence is blocked")
+            )
         post_process = _process_item(post_probe.get("process")) or {}
         post_active, post_stopped, post_explicit = _record_active_jobs(post_process)
         post_state = str(post_probe.get("state") or "unknown").casefold()
         if post_state == "busy" or (post_state == "unknown" and not (post_explicit and not post_active and not post_stopped)):
-            raise DomainError("INTERRUPT_UNVERIFIED", "post-interrupt activity remains unknown or busy")
+            raise _mark_side_effect_unknown(
+                DomainError("INTERRUPT_UNVERIFIED", "post-interrupt activity remains unknown or busy")
+            )
         result = {
             "cli_exit_status": "not_needed",
             "task_interrupted": True,

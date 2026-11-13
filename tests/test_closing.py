@@ -465,6 +465,29 @@ class ClosingTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(result["unknown_sessions"][0]["session_id"], "s1")
         self.assertFalse(any(item[0] == "close" for item in backend.calls))
 
+    async def test_force_exit_verification_failure_reports_unknown_interruption(self):
+        class UnverifiedInterruptBackend(FakeBackend):
+            async def exit_session(self, current, probe, force):
+                error = DomainError("INTERRUPT_UNVERIFIED", "signal completion unverified")
+                error.side_effect_status = "unknown"
+                raise error
+
+        backend = UnverifiedInterruptBackend(
+            [row("s1")],
+            {"s1": idle_probe(state="busy")},
+        )
+        result = await CloseService(backend, store=RecoveryStore(tempfile.mkdtemp())).run(
+            "session", session_id="s1", force=True
+        )
+
+        self.assertEqual(result["status"], "unknown")
+        self.assertEqual(result["unknown_sessions"][0]["session_id"], "s1")
+        self.assertEqual(result["unknown_sessions"][0]["interruption"], "unknown")
+        self.assertEqual(result["unknown_sessions"][0]["exit"], "unknown")
+        self.assertEqual(result["unknown_sessions"][0]["closure_status"], "unknown")
+        self.assertEqual(result["unknown_sessions"][0]["reason"], "INTERRUPT_UNVERIFIED")
+        self.assertFalse(any(item[0] == "close" for item in backend.calls))
+
 
 if __name__ == "__main__":
     unittest.main()

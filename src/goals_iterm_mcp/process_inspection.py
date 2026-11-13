@@ -304,6 +304,36 @@ class MacOSProcessProvider:
 
         return self.ancestor_pids(self.own_pid, records)
 
+    @staticmethod
+    def _verified_login_ancestor(
+        shell_pid: int | None,
+        tty: str | None,
+        by_pid: Mapping[int, ProcessRecord],
+    ) -> ProcessRecord | None:
+        """Return a login PID only when it is a stable direct shell ancestor.
+
+        A process name by itself is not enough to classify a same-TTY process
+        as benign.  Require the observed parent link from the shell, matching
+        TTYs, and stable PID/start identities for both records.
+        """
+
+        if shell_pid is None or not tty:
+            return None
+        shell = by_pid.get(shell_pid)
+        if shell is None or shell.tty != tty or not shell.identity.is_stable:
+            return None
+        if shell.ppid is None:
+            return None
+        parent = by_pid.get(shell.ppid)
+        if (
+            parent is None
+            or parent.executable != "login"
+            or parent.tty != tty
+            or not parent.identity.is_stable
+        ):
+            return None
+        return parent
+
     def inspect(self, row: Mapping[str, Any]) -> dict[str, Any] | None:
         """Describe the target process and any active/stopped descendants.
 
@@ -419,6 +449,13 @@ class MacOSProcessProvider:
             if len(roots) == 1:
                 shell_pid = next(iter(roots))
 
+        # iTerm commonly starts a login shell through a `login` process.  It
+        # is benign only when the same-TTY process table verifies a stable
+        # direct parent link to the shell; never suppress every process named
+        # login or every same-TTY ancestor.
+        benign_login = self._verified_login_ancestor(shell_pid, tty, by_pid)
+        benign_login_pid = benign_login.pid if benign_login is not None else None
+
         for record in records:
             if record.exited:
                 continue
@@ -429,15 +466,13 @@ class MacOSProcessProvider:
             # session jobs so background siblings cannot slip through.
             if not descendant and tty is not None and record.tty != tty:
                 continue
-            if shell_pid is not None and record.pid == shell_pid:
+            if record.pid == shell_pid or record.pid == benign_login_pid:
                 continue
             # Keep descendants and same-TTY jobs.  A same-TTY process outside
             # the foreground group is a background job and still blocks an
-            # ordinary close; shell ancestors are the only benign processes
-            # excluded here.
+            # ordinary close; only the verified shell and direct login parent
+            # are excluded.
             if descendant or record.tty == tty:
-                if record.executable in shell_names and shell_pid is not None and record.pid == shell_pid:
-                    continue
                 candidates.append(record)
         active = [record for record in candidates if not record.stopped]
         stopped = [record for record in candidates if record.stopped]
@@ -447,6 +482,16 @@ class MacOSProcessProvider:
             for record in records
             if record.pid in protected and record.pgid is not None
         }
+        ignored_ancestors = []
+        if benign_login is not None:
+            ignored_ancestors.append(
+                {
+                    "identity": benign_login.identity.as_dict(),
+                    "executable": "login",
+                    "classification": "verified_login_ancestor",
+                    "classification_reason": "stable_same_tty_direct_parent_of_shell",
+                }
+            )
         identity = target.identity.as_dict() if target is not None else None
         return {
             "available": True,
@@ -463,6 +508,7 @@ class MacOSProcessProvider:
             ),
             "protected_groups": sorted(protected_groups),
             "processes": [record.as_dict() for record in candidates],
+            "ignored_ancestors": ignored_ancestors,
         }
 
     def _record_for_identity(

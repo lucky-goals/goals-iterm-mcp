@@ -35,15 +35,22 @@ TOTAL_TIMEOUT = 120.0
 class _ClosingError(Exception):
     """Internal control-flow error carrying a safe public code."""
 
-    def __init__(self, code: str, *, unknown: bool = False):
+    def __init__(
+        self,
+        code: str,
+        *,
+        unknown: bool = False,
+        side_effect_status: str | None = None,
+    ):
         self.code = code
         self.unknown = unknown
+        self.side_effect_status = side_effect_status
         super().__init__(code)
 
 
 class _Cancelled(_ClosingError):
-    def __init__(self):
-        super().__init__("CANCELLED", unknown=True)
+    def __init__(self, *, side_effect_status: str | None = None):
+        super().__init__("CANCELLED", unknown=True, side_effect_status=side_effect_status)
 
 
 class _TimedOut(_ClosingError):
@@ -113,21 +120,34 @@ async def _call_with_timeout(method: Any, *args: Any, timeout: float) -> Any:
         except asyncio.TimeoutError as exc:
             raise _TimedOut() from exc
         except asyncio.CancelledError as exc:
-            raise _Cancelled() from exc
+            raise _Cancelled(side_effect_status=getattr(exc, "side_effect_status", None)) from exc
     except _ClosingError:
         raise
     except DomainError as exc:
         code = exc.code if isinstance(exc.code, str) and exc.code else "BACKEND_UNAVAILABLE"
+        side_effect_status = getattr(exc, "side_effect_status", None)
         unknown = (
             code in {"BACKEND_UNAVAILABLE", "TIMEOUT", "DISCONNECTED", "CANCELLED"}
             or code.endswith("_UNKNOWN")
             or "TIMEOUT" in code
             or "DISCONNECT" in code
+            or side_effect_status == "unknown"
         )
-        raise _ClosingError(code, unknown=unknown) from exc
+        raise _ClosingError(
+            code,
+            unknown=unknown,
+            side_effect_status=side_effect_status,
+        ) from exc
     except asyncio.CancelledError as exc:
-        raise _Cancelled() from exc
+        raise _Cancelled(side_effect_status=getattr(exc, "side_effect_status", None)) from exc
     except Exception as exc:
+        side_effect_status = getattr(exc, "side_effect_status", None)
+        if side_effect_status in {"not_attempted", "attempted", "unknown"}:
+            raise _ClosingError(
+                "BACKEND_UNAVAILABLE",
+                unknown=side_effect_status == "unknown",
+                side_effect_status=side_effect_status,
+            ) from exc
         raise _BackendUnavailable() from exc
 
 
@@ -864,6 +884,7 @@ class CloseService:
     ) -> tuple[str, _ClosingError | None]:
         sid = row["session_id"]
         result = session_results[sid]
+        exit_call_started = False
         try:
             completed_rows = [
                 candidate
@@ -879,8 +900,15 @@ class CloseService:
                 force=force,
                 completed_rows=completed_rows,
             )
+            exit_method = getattr(self.backend, "exit_session", None)
+            if not callable(exit_method):
+                raise _BackendUnavailable()
+            # The backend call can perform a signal or CLI exit before it
+            # returns.  A malformed or lost result therefore cannot imply
+            # that interruption was never attempted.
+            exit_call_started = True
             value = await _call_with_timeout(
-                getattr(self.backend, "exit_session", None), checked_row, checked_probe, force, timeout=EXIT_TIMEOUT
+                exit_method, checked_row, checked_probe, force, timeout=EXIT_TIMEOUT
             )
             status, interruption, updates = self._exit_status(value, bool(checked_probe.get("cli_sessions")))
             result["interruption"] = interruption
@@ -891,6 +919,20 @@ class CloseService:
         except _ClosingError as exc:
             if isinstance(exc, _Cancelled):
                 self._cancelled = True
+            if (
+                (force or bool(probe.get("cli_sessions")))
+                and exit_call_started
+                and result.get("interruption") == "not_attempted"
+                and exc.side_effect_status != "not_attempted"
+                and (
+                    exc.unknown
+                    or exc.side_effect_status == "unknown"
+                    or exc.code in {"CLI_EXIT_STATUS_MISSING", "TASK_INTERRUPTION_STATUS_MISSING"}
+                )
+            ):
+                result["interruption"] = "unknown"
+                exc.unknown = True
+                exc.side_effect_status = "unknown"
             result["closure_status"] = "unknown" if exc.unknown else "failed"
             result["exit"] = "unknown" if exc.unknown else "failed"
             result["reason"] = exc.code

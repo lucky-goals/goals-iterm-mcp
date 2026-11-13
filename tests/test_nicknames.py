@@ -13,7 +13,12 @@ from mcp.server.fastmcp.exceptions import ToolError
 from goals_iterm_mcp.backends import ItermBackend
 from goals_iterm_mcp.direct import DirectItermBackend, ItermTools
 from goals_iterm_mcp.errors import DomainError
-from goals_iterm_mcp.naming import NICKNAME_VARIABLE, NICKNAMES
+from goals_iterm_mcp.naming import (
+    MAX_NICKNAME_LENGTH,
+    MIN_NICKNAME_LENGTH,
+    NICKNAME_VARIABLE,
+    NICKNAMES,
+)
 
 
 def row(session_id: str, name: str | None = None) -> dict:
@@ -58,6 +63,16 @@ class NamedBackend:
 
 
 class NicknameServiceTests(unittest.IsolatedAsyncioTestCase):
+    def test_catalogue_contains_200_distinct_four_to_six_letter_names(self):
+        self.assertEqual(len(NICKNAMES), 200)
+        self.assertEqual(MIN_NICKNAME_LENGTH, 4)
+        self.assertEqual(MAX_NICKNAME_LENGTH, 6)
+        self.assertEqual(len({item.casefold() for item in NICKNAMES}), 200)
+        for item in NICKNAMES:
+            self.assertGreaterEqual(len(item), 4)
+            self.assertLessEqual(len(item), 6)
+            self.assertTrue(item.isascii() and item.isalpha() and item == item.lower())
+
     async def test_explicit_duplicate_checks_sessions_outside_allowlist(self):
         backend = NamedBackend([row("owned", "home"), row("other", "amber")])
         service = ItermTools(backend, session_ids=["owned"])
@@ -109,6 +124,28 @@ class NicknameServiceTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(backend.create_calls[0][3], result["name"])
         self.assertNotEqual(result["name"], "acorn")
 
+    async def test_create_accepts_explicit_name_and_rejects_collisions_or_reserved(self):
+        backend = NamedBackend([row("external", "amber")])
+        service = ItermTools(backend)
+
+        created = await service.invoke(
+            service.create, "window", None, None, True, " cedar "
+        )
+        self.assertEqual(created["name"], "cedar")
+        self.assertEqual(backend.create_calls, [("window", None, None, "cedar")])
+
+        for duplicate_or_bad, expected in (
+            ("AMBER", "NICKNAME_IN_USE"),
+            ("   ", "INVALID_ARGUMENT"),
+            ("active", "INVALID_ARGUMENT"),
+            ("all", "INVALID_ARGUMENT"),
+        ):
+            with self.assertRaisesRegex(ToolError, expected):
+                await service.invoke(
+                    service.create, "window", None, None, True, duplicate_or_bad
+                )
+        self.assertEqual(len(backend.create_calls), 1)
+
     async def test_rename_failure_is_reported_without_retry(self):
         backend = NamedBackend([row("session", "home")], fail_rename=True)
         service = ItermTools(backend)
@@ -137,6 +174,7 @@ class DirectBackendNicknameTests(unittest.IsolatedAsyncioTestCase):
             async_set_name=AsyncMock(),
             async_set_profile_properties=AsyncMock(),
             async_get_variable=AsyncMock(return_value="ember"),
+            async_activate=AsyncMock(),
         )
         self.tab = SimpleNamespace(tab_id="tab", current_session=self.session)
         self.window = SimpleNamespace(window_id="window", current_tab=self.tab)
@@ -145,6 +183,7 @@ class DirectBackendNicknameTests(unittest.IsolatedAsyncioTestCase):
         self.app = SimpleNamespace(
             terminal_windows=[self.window], get_session_by_id=lambda _session_id: self.session,
             async_refresh=AsyncMock(),
+            async_activate=AsyncMock(),
         )
         self.backend = DirectItermBackend(
             broker_epoch="broker", connection=object(), app=self.app
@@ -161,11 +200,45 @@ class DirectBackendNicknameTests(unittest.IsolatedAsyncioTestCase):
 
         profile = self.window_factory.async_create.await_args.kwargs["profile_customizations"]
         self.assertEqual(result["name"], "ember")
+        self.assertTrue(result["activated"])
         self.assertEqual(profile.values["Name"], '"ember"')
         self.assertEqual(profile.values["Allow Title Setting"], "false")
         self.assertEqual(profile.values["Title Components"], "1")
         self.assertEqual(profile.values["Command"], '"/bin/cat"')
+        self.session.async_set_name.assert_awaited_once_with("ember")
         self.session.async_set_variable.assert_awaited_once_with(NICKNAME_VARIABLE, "ember")
+        self.session.async_activate.assert_awaited_once_with(
+            select_tab=True, order_window_front=True
+        )
+        self.app.async_activate.assert_awaited_once_with(
+            raise_all_windows=False, ignoring_other_apps=True
+        )
+
+    async def test_creation_can_skip_foreground_activation_and_activate_existing_session(self):
+        result = await self.backend.create(
+            "tab", target_id="window", name="ember", activate=False
+        )
+        self.assertFalse(result["activated"])
+        self.session.async_activate.assert_not_awaited()
+        self.app.async_activate.assert_not_awaited()
+
+        target = {
+            "session_id": "created",
+            "session_epoch": "epoch",
+            "broker_epoch": "broker",
+        }
+        with patch.object(
+            ItermBackend,
+            "_session_for",
+            new=AsyncMock(return_value=(target, self.session)),
+        ):
+            await self.backend.activate(target)
+        self.session.async_activate.assert_awaited_once_with(
+            select_tab=True, order_window_front=True
+        )
+        self.app.async_activate.assert_awaited_once_with(
+            raise_all_windows=False, ignoring_other_apps=True
+        )
 
     async def test_rename_profile_write_then_variable_failure_is_not_retried(self):
         self.session.async_set_variable.side_effect = RuntimeError("variable failed")

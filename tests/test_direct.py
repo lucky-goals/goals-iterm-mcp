@@ -40,7 +40,7 @@ class DirectTests(unittest.IsolatedAsyncioTestCase):
 
     async def test_tool_surface_and_read_only(self):
         tools = await build_server(ItermTools(backend())).list_tools()
-        self.assertEqual({t.name for t in tools}, {"list_sessions", "read_screen", "read_history", "inspect_sessions", "send_text", "send_keys", "rename_session", "create_window", "create_tab", "close_session", "close_tab", "close_window", "clean_all_sessions"})
+        self.assertEqual({t.name for t in tools}, {"list_sessions", "read_screen", "read_history", "inspect_sessions", "send_text", "send_keys", "rename_session", "activate_session", "create_window", "create_tab", "close_session", "close_tab", "close_window", "clean_all_sessions"})
         reads = await build_server(ItermTools(backend()), read_only=True).list_tools()
         self.assertEqual({t.name for t in reads}, {"list_sessions", "read_screen", "read_history", "inspect_sessions"})
 
@@ -159,30 +159,67 @@ class DirectTests(unittest.IsolatedAsyncioTestCase):
     async def test_read_only_write_calls_are_rejected(self):
         fake = backend()
         server = build_server(ItermTools(fake), read_only=True)
-        for name in ("send_text", "send_keys", "rename_session", "create_window", "create_tab", "close_session", "close_tab", "close_window", "clean_all_sessions"):
+        for name in ("send_text", "send_keys", "rename_session", "activate_session", "create_window", "create_tab", "close_session", "close_tab", "close_window", "clean_all_sessions"):
             with self.assertRaises(ToolError):
                 await server.call_tool(name, {})
         fake.send.assert_not_awaited()
         fake.rename.assert_not_awaited()
+        fake.activate.assert_not_awaited()
         fake.create.assert_not_awaited()
+
+    async def test_empty_allowlist_blocks_all_sessions_and_creation(self):
+        fake = backend()
+        service = ItermTools(fake, session_ids=[])
+        self.assertEqual(await service.invoke(service.catalogue), [])
+        with self.assertRaisesRegex(ToolError, "SESSION_NOT_ALLOWED"):
+            await service.invoke(service.screen, "session-1")
+        with self.assertRaisesRegex(ToolError, "SESSION_NOT_ALLOWED"):
+            await service.invoke(service.activate_session, "session-1")
+        with self.assertRaisesRegex(ToolError, "CREATION_DISABLED_WITH_SESSION_ALLOWLIST"):
+            await service.invoke(service.create, "window")
+        fake.capture.assert_not_awaited()
+        fake.activate.assert_not_awaited()
+        fake.create.assert_not_awaited()
+
+    async def test_activate_session_targets_exact_allowed_session(self):
+        fake = backend()
+        server = build_server(ItermTools(fake, session_ids=["session-1"]))
+        _, payload = await server.call_tool("activate_session", {"session_id": "session-1"})
+        self.assertEqual(payload, {"session_id": "session-1", "activated": True, "api_acknowledged": True})
+        fake.activate.assert_awaited_once()
+        for bad in ("active", "all", "", "other"):
+            with self.assertRaises(ToolError):
+                await server.call_tool("activate_session", {"session_id": bad})
+        self.assertEqual(fake.activate.await_count, 1)
 
     async def test_creation_arguments_and_invalid_commands(self):
         fake = backend()
-        async def create(kind, target_id, command, *, name):
+        async def create(kind, target_id, command, *, name, activate=True):
             sid = f"new-{len(fake.list_sessions.return_value)}"
             fake.list_sessions.return_value.append({"target": {"session_id": sid}, "name": name})
-            return {"session_id": sid}
+            return {"session_id": sid, "activated": activate}
         fake.create.side_effect = create
         server = build_server(ItermTools(fake))
-        await server.call_tool("create_window", {"command": "/bin/cat"})
+        _, created_window = await server.call_tool("create_window", {"name": "ember", "command": "/bin/cat"})
         first_call = fake.create.await_args_list[0]
         self.assertEqual(first_call.args[:3], ("window", None, "/bin/cat"))
-        self.assertIn("name", first_call.kwargs)
-        await server.call_tool("create_tab", {"window_id": "window-1"})
+        self.assertEqual(first_call.kwargs["name"], "ember")
+        self.assertEqual(created_window["name"], "ember")
+        self.assertTrue(created_window["activated"])
+        with self.assertRaisesRegex(ToolError, "NICKNAME_IN_USE"):
+            await server.call_tool("create_window", {"name": "EMBER"})
+        _, created_tab = await server.call_tool("create_tab", {"window_id": "window-1", "name": "cobalt", "activate": False})
         second_call = fake.create.await_args_list[1]
         self.assertEqual(second_call.args[:3], ("tab", "window-1", None))
-        self.assertIn("name", second_call.kwargs)
-        self.assertNotEqual(first_call.kwargs["name"], second_call.kwargs["name"])
+        self.assertEqual(second_call.kwargs["name"], "cobalt")
+        self.assertEqual(created_tab["name"], "cobalt")
+        self.assertIs(second_call.kwargs["activate"], False)
+        self.assertFalse(created_tab["activated"])
+        with self.assertRaises(ToolError):
+            await server.call_tool("create_window", {"activate": "false"})
+        for bad_window in ("", "active", "all"):
+            with self.assertRaises(ToolError):
+                await server.call_tool("create_tab", {"window_id": bad_window})
         for command in ("", "界" * 6000):
             with self.assertRaises(ToolError):
                 await server.call_tool("create_window", {"command": command})
@@ -219,7 +256,7 @@ build_server(ItermTools(fake)).run()
         async with stdio_client(StdioServerParameters(command=sys.executable, args=["-c", code])) as streams:
             async with ClientSession(*streams) as client:
                 await client.initialize()
-                self.assertEqual(len((await client.list_tools()).tools), 13)
+                self.assertEqual(len((await client.list_tools()).tools), 14)
                 result = await client.call_tool("read_screen", {"session_id": "session-1"})
                 self.assertFalse(result.isError)
                 self.assertEqual(result.structuredContent["screen"]["lines"][0]["text"], "界😀")

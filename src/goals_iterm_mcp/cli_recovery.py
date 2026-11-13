@@ -87,6 +87,12 @@ _UUID_BYTES_RE = re.compile(
 )
 
 
+class ExitOutcomeUnknown(RuntimeError):
+    """The exit signal was delivered but its completion proof failed."""
+
+    side_effect_status = "unknown"
+
+
 def normalize_cli(value: Any) -> str | None:
     """Map executable/context names to the four supported CLI names."""
 
@@ -1444,29 +1450,37 @@ class CliRecoveryAdapter:
             raise RuntimeError("CLI descendants remained after SIGINT") from None
         except (PermissionError, OSError) as exc:
             raise RuntimeError("SIGINT could not be delivered to the CLI process") from exc
-        if _wait_process_scope_exit(scope, self.runner, 1.5):
-            if _process_scope_exit_verified(scope, self.runner):
-                return exit_result()
-            raise RuntimeError("CLI process identity changed during graceful shutdown")
-        if not self._current_identity(pid, expected_start):
-            if _process_scope_exit_verified(scope, self.runner):
-                return exit_result()
-            if _process_exit_verified(pid, expected_start, self.runner):
-                raise RuntimeError("CLI descendant remained after SIGINT")
-            raise RuntimeError("CLI process identity changed during graceful shutdown")
         try:
-            os.kill(pid, signal.SIGTERM)
-        except ProcessLookupError:
-            if _process_scope_exit_verified(scope, self.runner):
-                return exit_result()
-            raise RuntimeError("CLI descendants remained after SIGTERM") from None
-        except (PermissionError, OSError) as exc:
-            raise RuntimeError("SIGTERM could not be delivered to the CLI process") from exc
-        if not _wait_process_scope_exit(scope, self.runner, 1.5):
-            raise RuntimeError("CLI process or descendant did not exit within the bounded graceful shutdown")
-        if not _process_scope_exit_verified(scope, self.runner):
-            raise RuntimeError("CLI process identity changed during graceful shutdown")
-        return exit_result()
+            if _wait_process_scope_exit(scope, self.runner, 1.5):
+                if _process_scope_exit_verified(scope, self.runner):
+                    return exit_result()
+                raise RuntimeError("CLI process identity changed during graceful shutdown")
+            if not self._current_identity(pid, expected_start):
+                if _process_scope_exit_verified(scope, self.runner):
+                    return exit_result()
+                if _process_exit_verified(pid, expected_start, self.runner):
+                    raise RuntimeError("CLI descendant remained after SIGINT")
+                raise RuntimeError("CLI process identity changed during graceful shutdown")
+            try:
+                os.kill(pid, signal.SIGTERM)
+            except ProcessLookupError:
+                if _process_scope_exit_verified(scope, self.runner):
+                    return exit_result()
+                raise RuntimeError("CLI descendants remained after SIGTERM") from None
+            except (PermissionError, OSError) as exc:
+                raise RuntimeError("SIGTERM could not be delivered to the CLI process") from exc
+            if not _wait_process_scope_exit(scope, self.runner, 1.5):
+                raise RuntimeError("CLI process or descendant did not exit within the bounded graceful shutdown")
+            if not _process_scope_exit_verified(scope, self.runner):
+                raise RuntimeError("CLI process identity changed during graceful shutdown")
+            return exit_result()
+        except ExitOutcomeUnknown:
+            raise
+        except Exception as exc:
+            # SIGINT was delivered.  Any later timeout, process-identity
+            # change, or surviving descendant leaves the side effect
+            # uncertain and must not be reported as not_attempted.
+            raise ExitOutcomeUnknown(str(exc) or "CLI exit outcome is unknown") from exc
 
     def observe(
         self,
@@ -1779,6 +1793,7 @@ __all__ = [
     "Activity",
     "ChatEvidence",
     "CliRecoveryAdapter",
+    "ExitOutcomeUnknown",
     "IdentityStatus",
     "Observation",
     "ProcessBinding",

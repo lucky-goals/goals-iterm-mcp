@@ -240,6 +240,35 @@ class CliRecoveryLifecycleTests(unittest.TestCase):
         self.assertEqual(result["cli_exit_status"], "exited")
         self.assertEqual(kill.call_args.args[1], signal.SIGINT)
 
+    def test_post_sigint_verification_failure_raises_exit_outcome_unknown(self):
+        from goals_iterm_mcp.cli_recovery import ExitOutcomeUnknown
+
+        transcript = "/Users/example/.claude/projects/work/" + CHAT + ".jsonl"
+        adapter = CliRecoveryAdapter(
+            runner=ProcessEvidenceRunner(opened=transcript)
+        )
+        adapter.register(
+            "s1",
+            cli="claude",
+            pid=PID,
+            process_start=START,
+            chat_uuid=CHAT,
+        )
+        probe = adapter.observe("s1", process_start=START).as_probe()
+        probe["state"] = "busy"
+
+        with mock.patch(
+            "goals_iterm_mcp.cli_recovery._self_and_ancestors",
+            return_value=frozenset(),
+        ), mock.patch(
+            "goals_iterm_mcp.cli_recovery._wait_process_scope_exit",
+            return_value=False,
+        ), mock.patch("goals_iterm_mcp.cli_recovery.os.kill"):
+            with self.assertRaises(ExitOutcomeUnknown) as ctx:
+                adapter.exit_session({"session_id": "s1"}, probe, force=True)
+
+        self.assertEqual(ctx.exception.side_effect_status, "unknown")
+
 
 if __name__ == "__main__":
     unittest.main()

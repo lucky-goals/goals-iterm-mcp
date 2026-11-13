@@ -21,7 +21,7 @@ goals-iterm-mcp 通过 **iTerm2 Python API**，把支持 MCP 的 Agent 与电脑
 
 > 持续指导项目专用 iTerm 会话中的 Coding CLI，直到它完成登录问题的诊断、修复，并通过相关测试。每个阶段检查进度，必要时补充后续指令，最后按这些完成条件核对结果。不要重复提交仍在执行的任务；遇到超出本次范围的决策时询问我，完成后汇总改动和测试结果。
 
-已发布的 0.2.2 包提供 13 个 stdio MCP 工具：原有的会话枚举、终端读写、窗口和标签页创建、会话命名工具，加上只读的 `inspect_sessions` 诊断工具和 4 个关闭工具。4 个关闭工具最初在 0.2.0 版本引入。源码契约见[关闭工具实现规范](docs/closing-tools-spec.md)。
+已发布的 0.2.2 包提供 13 个 stdio MCP 工具，当前仓库源码提供 14 个 stdio MCP 工具：会话枚举、终端读写、窗口和标签页创建（默认切到前台）、会话激活（`activate_session`）、会话命名、只读的 `inspect_sessions` 诊断工具，以及 4 个关闭工具。4 个关闭工具最初在 0.2.0 版本引入。源码契约见[关闭工具实现规范](docs/closing-tools-spec.md)。
 
 ## 前置配置
 
@@ -170,8 +170,9 @@ MCP 客户端配置示例（替换为你的绝对路径）：
 | `inspect_sessions` | `session_id=None`、`nickname=None` | 只读清理能力审计。可选择一个精确会话 ID 或唯一的忽略大小写昵称，也可以省略二者以检查全部授权可见会话。报告有限的 prompt/process/CLI 证据、活动、身份与持久化观察、阻碍、处置建议及提示性的关闭就绪状态；不提供任务授权或关闭授权，也不会发送输入、退出 CLI、写入回执或关闭会话。 |
 | `send_text` | `session_id`, `text` | 原样发送文本，最多 16 KiB，不自动追加换行 |
 | `send_keys` | `session_id`, `key` | 发送一个终端按键序列 |
-| `create_window` | `command`（可选） | 新建默认 profile 窗口，可指定启动命令，返回新目标 ID |
-| `create_tab` | `window_id`, `command`（可选） | 在指定窗口新建标签页，可指定启动命令 |
+| `activate_session` | `session_id` | 选中指定会话所在的标签页/分屏，并将其 iTerm2 窗口切到前台，不发送任何终端输入 |
+| `create_window` | `name`（可选）、`command`（可选）、`activate=True` | 新建默认 profile 窗口（支持显式指定唯一 `name`，省略时分配未使用的 4–6 位昵称；默认切到前台），返回名称与新目标 ID。`command` 会替代登录 shell 直接执行；交互式 Coding CLI 请省略 `command`，改用 `send_text` + `send_keys("enter")` 启动 |
+| `create_tab` | `window_id`, `name`（可选）、`command`（可选）、`activate=True` | 在指定窗口新建标签页（支持显式指定唯一 `name`，省略时分配未使用的 4–6 位昵称；默认切到前台），返回名称与新目标 ID。`command` 会替代登录 shell 直接执行；交互式 Coding CLI 请省略 `command`，改用 `send_text` + `send_keys("enter")` 启动 |
 | `rename_session` | `session_id`, `name`（可选） | 重命名现有会话；省略 `name` 时随机分配未使用的昵称。 |
 | `close_session` | `session_id=None`、`nickname=None`、`force=False`、`dry_run=False` | 退出 CLI 并完成原生关闭验证后关闭选定会话。必须且只能提供 `session_id` 或 `nickname` 之一。 |
 | `close_tab` | `tab_id=None`、`session_id=None`、`nickname=None`、`force=False`、`dry_run=False` | 关闭选定会话或标签页所在的标签页。必须提供且只能提供一个选择器。 |
@@ -198,7 +199,7 @@ MCP 客户端配置示例（替换为你的绝对路径）：
 
 结果包含 `operation`、`status`、`force`、`dry_run`、`target`、恢复记录 ID 和路径，以及已关闭、已跳过、失败和未知会话列表。`status` 为 `closed`、`partial`、`refused`、`noop`、`dry_run` 或 `unknown` 之一。每个会话结果包含 iTerm ID、昵称、`cli_sessions`、中断、退出和关闭状态。聊天记录包含 `cli`、`chat_uuid`、`cwd`、身份来源、持久化状态和结构化的恢复 executable/argv。`chat_uuid` 只是聊天标识；它本身不能证明历史已保存，也不能证明恢复命令已经测试成功，这些信息由独立的结果字段表示。关闭后会刷新拓扑，因为 API 确认不等于已经关闭。丢失或超时的响应会变成 `unknown`，不会自动重试。拒绝、失败和未知操作会以带结构化数据的 MCP 工具错误返回；仅有清理跳过时不算错误。部分结果会报告已完成的副作用，不会通过重新打开终端回滚。试运行不会发送输入、写入恢复记录、修改名称或关闭对象。
 
-通过 `create_window` 或 `create_tab` 创建的会话会自动获得随机昵称，内置名称池包含 200 个互不相同、长度为 4–7 个字符的名称。已有会话可使用 `rename_session` 命名。自定义名称最多 64 个字符，名称比较不区分大小写。其他存活会话正在使用的名称不可重复分配；会话关闭后名称可以复用。名称池耗尽时，自动命名会在创建会话前报错。关闭工具的昵称选择器使用同一份存活会话目录，并在匹配前去除首尾空白、折叠大小写。
+通过 `create_window` 或 `create_tab` 创建会话时支持显式指定唯一 `name`；省略 `name` 时会自动从内置名称池（200 个互不相同、好记且长度为 4–6 个字符的名称）中分配未使用昵称。已有会话可使用 `rename_session` 命名。自定义名称最多 64 个字符，名称比较不区分大小写。其他存活会话正在使用的名称会在创建前拒绝分配；会话关闭后名称可以复用。名称池耗尽时，自动命名会在创建会话前报错。关闭工具的昵称选择器使用同一份存活会话目录，并在匹配前去除首尾空白、折叠大小写。
 
 读取和发送操作需要先通过 `list_sessions` 找到准确的 `session_id`。关闭工具可以按上面规则使用精确昵称或明确目标 ID；不要根据焦点或标题推测目标。
 

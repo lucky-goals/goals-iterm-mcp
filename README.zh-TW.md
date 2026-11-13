@@ -21,7 +21,7 @@ goals-iterm-mcp 透過 **iTerm2 Python API**，將支援 MCP 的 Agent 與電腦
 
 > 持續指導專案專用 iTerm 工作階段中的 Coding CLI，直到它完成登入問題的診斷、修復，並通過相關測試。每個階段檢查進度，必要時補充後續指令，最後依照完成條件核對結果。不要重複提交仍在執行的任務；遇到超出本次範圍的決策時詢問我，完成後彙整變更與測試結果。
 
-已發布的 0.2.2 套件提供 13 個 stdio MCP 工具：原有的工作階段列舉、終端機讀寫、視窗與分頁建立、工作階段命名工具，加上唯讀的 `inspect_sessions` 診斷工具和 4 個關閉工具。4 個關閉工具最初在 0.2.0 版本引入。原始碼契約見[關閉工具實作規範](docs/closing-tools-spec.md)。
+已發布的 0.2.2 套件提供 13 個 stdio MCP 工具，目前儲存庫原始碼提供 14 個 stdio MCP 工具：工作階段列舉、終端機讀寫、視窗與分頁建立（預設切到前景）、工作階段啟用（`activate_session`）、工作階段命名、唯讀的 `inspect_sessions` 診斷工具，以及 4 個關閉工具。4 個關閉工具最初在 0.2.0 版本引入。原始碼契約見[關閉工具實作規範](docs/closing-tools-spec.md)。
 
 ## 前置設定
 
@@ -170,8 +170,9 @@ MCP 用戶端設定範例（請替換為你的絕對路徑）：
 | `inspect_sessions` | `session_id=None`、`nickname=None` | 唯讀清理能力稽核。可選擇一個精確工作階段 ID 或唯一的不分大小寫暱稱，也可以省略兩者以檢查全部已授權可見工作階段。回報有限的 prompt/process/CLI 證據、活動、身分與持久化觀察、阻礙、處置建議及提示性的關閉就緒狀態；不提供任務授權或關閉授權，也不會傳送輸入、退出 CLI、寫入回執或關閉工作階段。 |
 | `send_text` | `session_id`, `text` | 原樣傳送文字，最多 16 KiB，不自動附加換行。 |
 | `send_keys` | `session_id`, `key` | 傳送一個終端機按鍵序列。 |
-| `create_window` | `command`（選用） | 使用預設設定檔建立視窗，可指定啟動命令，回傳新目標 ID。 |
-| `create_tab` | `window_id`, `command`（選用） | 在指定視窗建立分頁，可指定啟動命令。 |
+| `activate_session` | `session_id` | 選取指定工作階段所在的分頁/窗格，並將其 iTerm2 視窗切到前景，不傳送任何終端機輸入。 |
+| `create_window` | `name`（選用）、`command`（選用）、`activate=True` | 使用預設設定檔建立視窗（支援顯式指定唯一 `name`，省略時分配未使用的 4–6 位元暱稱；預設切到前景），回傳名稱與新目標 ID。`command` 會取代登入 shell 直接執行；互動式 Coding CLI 請省略 `command`，改用 `send_text` + `send_keys("enter")` 啟動。 |
+| `create_tab` | `window_id`, `name`（選用）、`command`（選用）、`activate=True` | 在指定視窗建立分頁（支援顯式指定唯一 `name`，省略時分配未使用的 4–6 位元暱稱；預設切到前景），回傳名稱與新目標 ID。`command` 會取代登入 shell 直接執行；互動式 Coding CLI 請省略 `command`，改用 `send_text` + `send_keys("enter")` 啟動。 |
 | `rename_session` | `session_id`, `name`（選用） | 重新命名現有工作階段；省略 `name` 時隨機分配未使用的暱稱。 |
 | `close_session` | `session_id=None`、`nickname=None`、`force=False`、`dry_run=False` | 退出 CLI 並完成原生關閉驗證後關閉選定工作階段。必須且只能提供 `session_id` 或 `nickname` 其中之一。 |
 | `close_tab` | `tab_id=None`、`session_id=None`、`nickname=None`、`force=False`、`dry_run=False` | 關閉選定工作階段或分頁所在的分頁。必須提供且只能提供一個選擇器。 |
@@ -198,7 +199,7 @@ MCP 用戶端設定範例（請替換為你的絕對路徑）：
 
 結果包含 `operation`、`status`、`force`、`dry_run`、`target`、復原記錄 ID 與路徑，以及已關閉、已跳過、失敗和未知工作階段清單。`status` 為 `closed`、`partial`、`refused`、`noop`、`dry_run` 或 `unknown` 其中之一。每個工作階段結果包含 iTerm ID、暱稱、`cli_sessions`、中斷、退出和關閉狀態。聊天記錄包含 `cli`、`chat_uuid`、`cwd`、身分來源、持久化狀態和結構化的復原 executable/argv。`chat_uuid` 只是聊天識別；它本身不能證明歷史已保存，也不能證明復原命令已測試成功，這些資訊由獨立結果欄位表示。關閉後會重新整理拓撲，因為 API 確認不等於已關閉。遺失或逾時的回應會變成 `unknown`，不會自動重試。拒絕、失敗和未知操作會以帶結構化資料的 MCP 工具錯誤回傳；只有清理跳過時不算錯誤。部分結果會回報已完成的副作用，不會透過重新開啟終端機回滾。試執行不會傳送輸入、寫入復原記錄、修改名稱或關閉物件。
 
-透過 `create_window` 或 `create_tab` 建立的工作階段會自動取得隨機暱稱，內建名稱池包含 200 個互不相同、長度為 4–7 個字元的名稱。既有工作階段可使用 `rename_session` 命名。自訂名稱最多 64 個字元，名稱比對不區分大小寫。其他存活工作階段正在使用的名稱不可重複分配；工作階段關閉後名稱可再次使用。名稱池用盡時，自動命名會在建立工作階段前回報錯誤。關閉工具的暱稱選擇器使用同一份存活工作階段目錄，並在比對前去除首尾空白、折疊大小寫。
+透過 `create_window` 或 `create_tab` 建立工作階段時支援顯式指定唯一 `name`；省略 `name` 時會自動從內建名稱池（200 個互不相同、好記且長度為 4–6 個字元的名稱）中分配未使用暱稱。既有工作階段可使用 `rename_session` 命名。自訂名稱最多 64 個字元，名稱比對不區分大小寫。其他存活工作階段正在使用的名稱會在建立前拒絕分配；工作階段關閉後名稱可再次使用。名稱池用盡時，自動命名會在建立工作階段前回報錯誤。關閉工具的暱稱選擇器使用同一份存活工作階段目錄，並在比對前去除首尾空白、折疊大小寫。
 
 讀取與傳送操作需要先透過 `list_sessions` 找到正確的 `session_id`。關閉工具可依上述規則使用精確暱稱或明確目標 ID；不要依焦點或標題推測目標。
 

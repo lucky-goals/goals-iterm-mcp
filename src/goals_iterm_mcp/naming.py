@@ -9,41 +9,41 @@ from collections.abc import Iterable
 from .errors import DomainError
 
 
-# Keep these names easy to say and type.  They are deliberately ASCII so that
-# names stay legible in terminal tabs, shell prompts, and MCP responses.
+# Keep these names memorable, easy to say, and easy to type (200 distinct
+# lowercase ASCII words, strictly 4 to 6 characters each).
 NICKNAMES: tuple[str, ...] = (
-    "acorn", "alder", "amber", "apex", "apple", "arrow", "aspire", "atlas",
-    "badge", "basil", "beacon", "berry", "birch", "blaze", "bloom", "bolt",
-    "brave", "brook", "cable", "cactus", "candle", "canary", "canyon", "caper",
-    "cedar", "charm", "chase", "cider", "cirrus", "civic", "cliff", "cloud",
-    "clover", "cobalt", "comet", "coral",
-    "crane", "crest", "crisp", "crown", "cosmos", "daisy", "dawn", "delta",
-    "dingo", "dragon", "dove", "drift",
-    "eagle", "earth", "ember", "emerald", "fable", "falcon", "fern", "flare",
-    "flint", "flora", "focus", "foxy", "frost", "gale", "garden", "gems",
-    "glade", "gleam", "glint", "globe", "grain", "granite", "grape", "grove",
-    "harbor", "haven", "hazel", "hearth", "hedge", "heron", "honey", "horizon",
-    "indigo", "iris", "island", "ivory", "jade", "jasmine", "jolly", "juniper",
-    "kestrel", "kindle", "kitten", "lagoon", "lark", "laser", "laurel", "leaf",
-    "lemon", "lilac", "linen", "lotus", "lucid", "lumen", "maple", "marble",
-    "marsh", "meadow", "meteor", "mint", "misty", "mocha", "moss", "nectar",
-    "nova", "oasis", "ocean", "olive", "onyx", "orbit", "orchid", "otter",
-    "panda", "paper", "pearl", "pebble", "pepper", "petal", "phoenix", "piano",
-    "pilot", "pine", "pixel", "plume", "polar", "pond", "prairie", "prism",
-    "quartz", "quest", "raven", "reef", "relic", "ripple", "river", "robin",
-    "rocket", "rose", "sable", "sage", "sail", "scarlet", "scout", "shale",
-    "shell", "shore", "signal", "silk", "slate", "solar", "sonic", "sparrow",
-    "spark", "spice", "spirit", "spruce", "star", "stone", "storm", "summit",
-    "sunny", "swift", "tango", "teal", "terra", "thistle", "thunder", "tiger",
-    "timber", "topaz", "torch", "trail", "triton", "tulip", "umber", "velvet",
-    "verve", "violet", "vista", "water", "whale", "willow", "wind", "winter",
-    "wisp", "wolf", "wonder", "xenon", "yarrow", "zephyr", "zinc", "zinnia",
+    "acorn", "alpha", "amber", "apex", "apple", "arrow", "aspen", "atlas",
+    "azure", "badge", "bamboo", "basil", "beacon", "berry", "birch", "blaze",
+    "bloom", "bolt", "breeze", "brook", "cabin", "cactus", "candle", "canyon",
+    "cedar", "charm", "cider", "cliff", "cloud", "clover", "cobalt", "comet",
+    "coral", "cosmos", "crane", "crest", "crisp", "crown", "daisy", "dawn",
+    "delta", "dingo", "dove", "dragon", "dream", "drift", "dune", "eagle",
+    "earth", "echo", "ember", "falcon", "fern", "flame", "flare", "flash",
+    "flint", "flora", "focus", "forge", "frost", "galaxy", "gale", "garden",
+    "gecko", "glade", "gleam", "globe", "grain", "grape", "grove", "halo",
+    "harbor", "haven", "hawk", "hazel", "helix", "heron", "honey", "husky",
+    "igloo", "indigo", "iris", "island", "ivory", "jade", "jazz", "jewel",
+    "kayak", "kite", "kitten", "kiwi", "koala", "lagoon", "lake", "lark",
+    "laser", "laurel", "lava", "leaf", "lemon", "lilac", "lime", "lion",
+    "lotus", "lucky", "lumen", "lunar", "lynx", "magic", "mango", "maple",
+    "marsh", "meadow", "meteor", "mint", "misty", "mocha", "moose", "moss",
+    "music", "nectar", "neon", "nexus", "noble", "north", "nova", "oasis",
+    "ocean", "olive", "omega", "onyx", "opera", "orbit", "orchid", "otter",
+    "panda", "peach", "pearl", "pebble", "pepper", "petal", "piano", "pilot",
+    "pine", "pixel", "planet", "plum", "polar", "pond", "poppy", "prism",
+    "quartz", "quest", "radar", "raven", "reef", "river", "robin", "rocket",
+    "rose", "ruby", "safari", "sage", "sail", "scout", "shore", "silver",
+    "solar", "sonic", "spark", "spruce", "star", "stone", "storm", "summit",
+    "sunny", "swift", "tango", "teal", "terra", "tiger", "timber", "topaz",
+    "torch", "trail", "tulip", "velvet", "violet", "vista", "whale", "willow",
+    "winter", "wolf", "wonder", "xenon", "zebra", "zenith", "zephyr", "zinc",
 )
 
 NICKNAME_VARIABLE = "user.goals_iterm_mcp_nickname"
 MIN_NICKNAME_LENGTH = 4
-MAX_NICKNAME_LENGTH = 7
+MAX_NICKNAME_LENGTH = 6
 MAX_EXPLICIT_NAME_LENGTH = 64
+RESERVED_SELECTORS = frozenset({"active", "all", "current", "focused", "*"})
 
 
 def _validate_catalogue() -> None:
@@ -81,6 +81,8 @@ def normalize_name(value: str) -> str:
         raise DomainError("INVALID_ARGUMENT", "name is not valid Unicode") from exc
     if any(unicodedata.category(char).startswith("C") for char in name):
         raise DomainError("INVALID_ARGUMENT", "name contains a control character")
+    if name.casefold() in RESERVED_SELECTORS:
+        raise DomainError("INVALID_ARGUMENT", "name must not be a reserved selector")
     return name
 
 

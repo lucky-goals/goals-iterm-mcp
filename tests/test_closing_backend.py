@@ -426,6 +426,117 @@ class ClosingBackendTests(unittest.IsolatedAsyncioTestCase):
         await adapter.exit_session(row, probe, force=True)
         self.assertEqual(seen["probe"]["identity"]["pid"], 200)
 
+    async def test_diagnostic_projects_bounded_process_jobs_and_verified_ancestors(self):
+        row = make_row()
+        active_jobs = [
+            {
+                "identity": {"pid": 200 + index, "start": f"job-{index}", "tty": "ttys004"},
+                "executable": "python",
+                "foreground": index == 0,
+                "command": "python --private-prompt",
+                "argv": ["--private-prompt"],
+                "environment": {"TOKEN": "private"},
+            }
+            for index in range(33)
+        ]
+        stopped_jobs = [
+            {
+                "identity": {"pid": 300, "start": "stopped-job", "tty": "ttys004"},
+                "executable": "vim",
+                "foreground": False,
+                "command": "vim private.txt",
+            },
+            {"identity": {"pid": 301}, "executable": "python", "foreground": False},
+        ]
+        process = {
+            "available": True,
+            "identity": {"pid": 100, "start": "shell-start", "tty": "ttys004"},
+            "tty": "ttys004",
+            "active_jobs": active_jobs,
+            "stopped_jobs": stopped_jobs,
+            "ignored_ancestors": [
+                {
+                    "identity": {"pid": 50, "start": "login-start", "tty": "ttys004"},
+                    "executable": "login",
+                    "classification": "verified_login_ancestor",
+                    "classification_reason": "stable_same_tty_direct_parent_of_shell",
+                    "argv": ["--secret"],
+                },
+                {
+                    "identity": {"pid": 51, "start": "unverified-start", "tty": "ttys004"},
+                    "executable": "python",
+                    "classification": "verified_login_ancestor",
+                    "classification_reason": "stable_same_tty_direct_parent_of_shell",
+                },
+            ],
+            "command": "raw command must not escape",
+        }
+
+        diagnostic = ClosingBackend.diagnostic(
+            row,
+            {"state": "busy", "reason": "active_job_on_tty", "process": process},
+        )
+        projected = diagnostic["process"]
+
+        self.assertEqual(projected["active_job_count"], 33)
+        self.assertEqual(len(projected["active_jobs"]), 32)
+        self.assertTrue(projected["active_jobs_truncated"])
+        self.assertEqual(
+            projected["active_jobs"][0],
+            {
+                "identity": {"pid": 200, "start": "job-0", "tty": "ttys004"},
+                "identity_status": "stable",
+                "program": "python",
+                "classification": "active_job",
+                "foreground": True,
+            },
+        )
+        self.assertEqual(projected["stopped_job_count"], 2)
+        self.assertEqual(projected["stopped_jobs"][0]["classification"], "stopped_job")
+        self.assertEqual(projected["stopped_jobs"][0]["identity_status"], "stable")
+        self.assertEqual(projected["stopped_jobs"][1]["identity_status"], "unavailable")
+        self.assertEqual(len(projected["ignored_ancestors"]), 1)
+        self.assertEqual(projected["ignored_ancestors"][0]["executable"], "login")
+        self.assertNotIn("private", str(diagnostic))
+        self.assertNotIn("secret", str(diagnostic))
+
+    async def test_force_signal_verification_failure_carries_unknown_side_effect(self):
+        events = []
+        backend = FakeBackend([make_row()])
+        identity = {"pid": 200, "start": "job-start", "tty": "ttys001"}
+
+        class FailingVerificationProcess:
+            def __call__(self, row):
+                return {
+                    "available": True,
+                    "identity": identity,
+                    "active_jobs": [{"pid": 200, "identity": identity}],
+                    "stopped_jobs": [],
+                    "foreground": True,
+                }
+
+            def interrupt_foreground(self, identity, row=None, probe=None):
+                events.append("signal")
+                return {"sent": "SIGINT", "pid": identity["pid"]}
+
+            def verify_interrupt(self, identity, row=None, probe=None):
+                return False
+
+        adapter = ClosingBackend(
+            backend,
+            process_provider=FailingVerificationProcess(),
+            prompt_reader=lambda row: Prompt(),
+        )
+        row = (await adapter.snapshot())[0]
+        probe = await adapter.probe(row)
+
+        with self.assertRaises(DomainError) as ctx:
+            await adapter.exit_session(row, probe, force=True)
+
+        self.assertEqual(ctx.exception.code, "INTERRUPT_UNVERIFIED")
+        self.assertEqual(ctx.exception.side_effect_status, "unknown")
+        self.assertEqual(events, ["signal"])
+
 
 class ProcessInspectionTests(unittest.TestCase):
     def test_ps_runner_uses_argv_and_redacts_command_arguments(self):
@@ -489,6 +600,59 @@ class ProcessInspectionTests(unittest.TestCase):
         evidence = provider.inspect({"job_pid": 20, "tty": "ttys001"})
         self.assertEqual(evidence["active_jobs"], [])
         self.assertIsNone(evidence["identity"])
+
+    def test_stable_same_tty_login_direct_parent_is_benign(self):
+        provider = MacOSProcessProvider(enabled=True, own_pid=900)
+        provider.list_processes = lambda: [
+            ProcessRecord(5, 1, 5, 5, "ttys001", "S", "login-start", "login"),
+            ProcessRecord(10, 5, 10, 10, "ttys001", "S", "shell-start", "zsh"),
+        ]
+
+        evidence = provider.inspect({"job_pid": 10, "tty": "ttys001"})
+
+        self.assertEqual(evidence["active_jobs"], [])
+        self.assertEqual(evidence["processes"], [])
+        self.assertEqual(
+            evidence["ignored_ancestors"],
+            [
+                {
+                    "identity": {
+                        "pid": 5,
+                        "start_time": "login-start",
+                        "start": "login-start",
+                        "starttime": "login-start",
+                        "tty": "ttys001",
+                    },
+                    "executable": "login",
+                    "classification": "verified_login_ancestor",
+                    "classification_reason": "stable_same_tty_direct_parent_of_shell",
+                }
+            ],
+        )
+
+    def test_login_name_alone_does_not_make_same_tty_process_benign(self):
+        provider = MacOSProcessProvider(enabled=True, own_pid=900)
+        provider.list_processes = lambda: [
+            ProcessRecord(5, 1, 5, 5, "ttys001", "S", "login-start", "login"),
+            ProcessRecord(10, 1, 10, 10, "ttys001", "S", "shell-start", "zsh"),
+        ]
+
+        evidence = provider.inspect({"job_pid": 10, "tty": "ttys001"})
+
+        self.assertEqual([item["pid"] for item in evidence["active_jobs"]], [5])
+        self.assertEqual(evidence["ignored_ancestors"], [])
+
+    def test_login_parent_without_stable_identity_remains_a_blocking_job(self):
+        provider = MacOSProcessProvider(enabled=True, own_pid=900)
+        provider.list_processes = lambda: [
+            ProcessRecord(5, 1, 5, 5, "ttys001", "S", None, "login"),
+            ProcessRecord(10, 5, 10, 10, "ttys001", "S", "shell-start", "zsh"),
+        ]
+
+        evidence = provider.inspect({"job_pid": 10, "tty": "ttys001"})
+
+        self.assertEqual([item["pid"] for item in evidence["active_jobs"]], [5])
+        self.assertEqual(evidence["ignored_ancestors"], [])
 
     def test_interrupt_signals_exact_verified_foreground_group(self):
         signals = []
