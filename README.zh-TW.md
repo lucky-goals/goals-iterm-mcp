@@ -21,7 +21,18 @@ goals-iterm-mcp 透過 **iTerm2 Python API**，將支援 MCP 的 Agent 與電腦
 
 > 持續指導專案專用 iTerm 工作階段中的 Coding CLI，直到它完成登入問題的診斷、修復，並通過相關測試。每個階段檢查進度，必要時補充後續指令，最後依照完成條件核對結果。不要重複提交仍在執行的任務；遇到超出本次範圍的決策時詢問我，完成後彙整變更與測試結果。
 
-0.2.3 版本提供 14 個 stdio MCP 工具：工作階段列舉、終端機讀寫、視窗與分頁建立（預設切到前景）、工作階段啟用（`activate_session`）、工作階段命名、唯讀的 `inspect_sessions` 診斷工具，以及 4 個關閉工具。4 個關閉工具最初在 0.2.0 版本引入。契約見[關閉工具實作規範](docs/closing-tools-spec.md)。
+0.2.4 版本提供 14 個 stdio MCP 工具：工作階段列舉、終端機讀寫、視窗與分頁建立（預設切到前景）、工作階段啟用（`activate_session`）、工作階段命名、唯讀的 `inspect_sessions` 診斷工具，以及 4 個關閉工具。4 個關閉工具最初在 0.2.0 版本引入。契約見[關閉工具實作規範](docs/closing-tools-spec.md)。
+
+## 推薦搭配：goals-iterm-skill
+
+`goals-iterm-mcp` 專注於提供可靠的底層終端機操作與安全關閉契約，不在伺服器端硬性綁定任務編排或輪詢策略。除了透過自訂提示詞直接呼叫 MCP 工具外，強烈建議搭配配套的 **[goals-iterm-skill](https://github.com/lucky-goals/goals-iterm-skill)**（[繁體中文文件](https://github.com/lucky-goals/goals-iterm-skill/blob/main/README.zh-TW.md) · [專案官網](https://lucky-goals.github.io/goals-iterm-skill/)）使用——透過 skill 驅動本 MCP，可直接獲得開箱即用的多 CLI 協調體驗：
+
+- **平行拆解與規整工作階段管理**：自動將無衝突的獨立子任務拆解至平行 CLI 工作階段（預設收斂於單一任務視窗 + 同層分頁中，並顯式指派 4–6 字元的易記暱稱），嚴格落實「專案程式碼、測試與 Git 變更交由終端機 CLI 執行，主 Agent 保持唯讀審查」的執行邊界。
+- **穩健派發與內聯進度監控**：多行或複雜指令透過私有決策檔案 + 單行短指令投遞（避免終端機多行貼上截斷或誤送出問題），預設依有界間隔內聯輪詢並在等待前播報真實進度，不會在 CLI 仍在執行或自動重試時重複派發。
+- **顧問式自主決策與結構化升級**：常規工程細節結合儲存庫既有風格直接拍板推進；遇到超出授權的重大權衡時，提供自包含脈絡、具體選項及建議方案與理由交由使用者決策。
+- **嚴格驗收、自動收尾與審計台帳**：依完成條件獨立核驗結果（不將閒置提示字元或 CLI 自稱完成視為通過），驗收後結合正常退出協議與本 MCP 的安全關閉工具自動回收任務專屬終端機、保留復原中繼資料，並全程維護按日拆分的 Markdown 審計台帳與本機工作階段註冊表。
+
+**建議使用順序**：先依下文步驟在主 Agent 用戶端安裝並驗證 `goals-iterm-mcp`，再參考 [goals-iterm-skill 安裝指引](https://github.com/lucky-goals/goals-iterm-skill/blob/main/README.zh-TW.md#透過-coding-agent-安裝)將 skill 安裝至同一用戶端。僅安裝 skill 不會提供終端機工具。
 
 ## 前置設定
 
@@ -44,10 +55,10 @@ goals-iterm-mcp 透過 **iTerm2 Python API**，將支援 MCP 的 Agent 與電腦
 
 ## 使用 uvx 執行
 
-0.2.3 已發布至 [PyPI](https://pypi.org/project/goals-iterm-mcp/0.2.3/)，該版本提供全部 14 個工具；無需複製儲存庫即可執行：
+0.2.4 已發布至 [PyPI](https://pypi.org/project/goals-iterm-mcp/0.2.4/)，該版本提供全部 14 個工具；無需複製儲存庫即可執行：
 
 ```sh
-uvx --python 3.12 goals-iterm-mcp@0.2.3 serve
+uvx --python 3.12 goals-iterm-mcp@0.2.4 serve
 ```
 
 Python 匯入路徑為 `goals_iterm_mcp`，啟動命令為 `goals-iterm-mcp`。
@@ -57,18 +68,18 @@ Python 匯入路徑為 `goals_iterm_mcp`，啟動命令為 `goals-iterm-mcp`。
 將下列提示詞複製給能執行本機命令、設定 MCP 用戶端的 Agent，把 `[MCP 用戶端]` 替換為實際用戶端，例如 Codex 桌面版或 Claude Code。Agent 需要存取本機 macOS；純雲端聊天無法連接本機 iTerm2。
 
 ```text
-請從 PyPI 安裝 goals-iterm-mcp 0.2.3，並設定至 [MCP 用戶端]。
+請從 PyPI 安裝 goals-iterm-mcp 0.2.4，並設定至 [MCP 用戶端]。
 專案網址：https://github.com/lucky-goals/goals-iterm-mcp
 
 1. 確認本機是 macOS，已安裝並執行 iTerm2。檢查 uv/uvx 是否存在；
    若未安裝，依 uv 官方說明安裝。使用 Python 3.12，不要複製儲存庫，
    不依賴專案目錄中的 .venv。
 2. 執行下列命令，驗證套件可以執行：
-   uvx --python 3.12 goals-iterm-mcp@0.2.3 --help
+   uvx --python 3.12 goals-iterm-mcp@0.2.4 --help
 3. 檢查用戶端現有的 MCP 設定，保留其他設定。在使用者層級設定中新增或更新
    一個名為 iterm 的 stdio 服務，避免重複安裝：
    command：本機 uvx 的絕對路徑
-   args：["--python", "3.12", "goals-iterm-mcp@0.2.3", "serve"]
+   args：["--python", "3.12", "goals-iterm-mcp@0.2.4", "serve"]
    使用該用戶端支援的設定格式與位置。修改現有設定前先備份，不變更其他服務。
 4. 如有需要，指導我啟用 iTerm2 Python API 並核准授權對話框。
    依用戶端支援的方式重新載入 MCP；若需要我手動重新啟動用戶端，請明確告知。
@@ -78,7 +89,7 @@ Python 匯入路徑為 `goals_iterm_mcp`，啟動命令為 `goals-iterm-mcp`。
    已實際載入工具」。若遇到阻礙，說明具體還需要完成哪一步。
 ```
 
-安裝此公開套件不需要 PyPI 帳號或 API Token。上述設定會提供已安裝版本的全部工具；安裝檢查僅列舉工作階段。
+安裝此公開套件不需要 PyPI 帳號或 API Token。上述設定會提供已安裝版本的全部工具；安裝檢查僅列舉工作階段。連線就緒後，建議繼續在同一用戶端安裝配套的 [goals-iterm-skill](https://github.com/lucky-goals/goals-iterm-skill/blob/main/README.zh-TW.md)，以獲得完整的任務拆解、持續監控、自動收尾與 Markdown 審計台帳體驗。
 
 ## 更新已安裝的舊版本
 
@@ -113,7 +124,7 @@ git pull --ff-only
 
 依用戶端支援的方式重新啟動或連接 `iterm` MCP，必要時重新啟動用戶端。更新磁碟檔案不會替換已執行的服務程序。Codex 可使用 **設定 → MCP servers → Restart**，或重新啟動 Codex；參見 [官方 MCP 設定說明](https://learn.chatgpt.com/docs/extend/mcp?surface=cli)。
 
-重新連線後，查詢目前用戶端實際載入的工具列表，並僅呼叫 `list_sessions` 驗證連線。工具列表應符合安裝版本；0.2.3 版本應有 14 個工具，包括 `activate_session`、唯讀的 `inspect_sessions` 診斷工具，以及 `close_session`、`close_tab`、`close_window`、`clean_all_sessions`。獨立程序握手成功不代表既有對話已刷新工具；若仍顯示舊介面，重新連線或開啟新對話後再檢查。升級驗收不需要建立、關閉終端或傳送輸入。啟動 Python 時禁止使用 `--reload`。
+重新連線後，查詢目前用戶端實際載入的工具列表，並僅呼叫 `list_sessions` 驗證連線。工具列表應符合安裝版本；0.2.4 版本應有 14 個工具，包括 `activate_session`、唯讀的 `inspect_sessions` 診斷工具，以及 `close_session`、`close_tab`、`close_window`、`clean_all_sessions`。獨立程序握手成功不代表既有對話已刷新工具；若仍顯示舊介面，重新連線或開啟新對話後再檢查。升級驗收不需要建立、關閉終端或傳送輸入。啟動 Python 時禁止使用 `--reload`。
 
 也可以將以下提示詞交給本機 Agent：
 
@@ -155,7 +166,7 @@ MCP 用戶端設定範例（請替換為你的絕對路徑）：
 
 選用參數：
 
-- `--read-only`：0.2.3 套件提供 4 個唯讀工具：`list_sessions`、`read_screen`、`read_history` 與 `inspect_sessions`。
+- `--read-only`：0.2.4 套件提供 4 個唯讀工具：`list_sessions`、`read_screen`、`read_history` 與 `inspect_sessions`。
 - `--session-id <ID>`：限制為指定工作階段，可重複傳入以允許多個工作階段。啟用後禁止建立視窗與分頁。
 
 預設可操作目前使用者 iTerm 中的所有工作階段。讀取與傳送操作必須傳入 `list_sessions` 回傳的精確 `session_id`；關閉工具也支援下方說明的明確選擇器。不會依焦點、萬用字元、前綴或標題推測目標。
@@ -181,13 +192,13 @@ MCP 用戶端設定範例（請替換為你的絕對路徑）：
 
 ### 唯讀工作階段能力稽核
 
-`inspect_sessions` 是 0.2.3 套件中的唯讀診斷工具。`session_id` 與 `nickname` 互斥。傳入精確 `session_id` 或唯一暱稱（去除前後空白並折疊大小寫）時檢查一個已授權工作階段；省略兩者時檢查目前全部已授權可見工作階段。選擇器無效、有歧義、不可用或超出授權範圍時，工具會在不寫入終端的情況下失敗。
+`inspect_sessions` 是 0.2.4 套件中的唯讀診斷工具。`session_id` 與 `nickname` 互斥。傳入精確 `session_id` 或唯一暱稱（去除前後空白並折疊大小寫）時檢查一個已授權工作階段；省略兩者時檢查目前全部已授權可見工作階段。選擇器無效、有歧義、不可用或超出授權範圍時，工具會在不寫入終端的情況下失敗。
 
 每項結果包含工作階段、分頁與視窗身分，以及有限的 `prompt`、`process`、`cli`、`terminal_activity`、`business_acceptance` 和 `close_readiness` 部分。診斷可能回報證據是否可用、觀測到的活動、穩定進程/CLI 身分、聊天持久化觀察、阻礙代碼和處置建議。`business_acceptance` 始終為 `not_observed`；`close_readiness` 僅供參考，其 `status` 為 `eligible_if_unchanged`、`blocked` 或 `unknown`，只有前者對應 `ready=true`。即使結果為 `ready: true`，也不代表取得授權或關閉一定成功；任何生命週期寫入前都必須重新探測。該工具只讀取證據，不會傳送終端輸入、退出 CLI、保存恢復回執或呼叫原生關閉。
 
 ### 關閉工具
 
-這 4 個關閉工具最初在 0.2.0 版本引入，並繼續包含在 0.2.3 版本中。完整契約見[關閉工具實作規範](docs/closing-tools-spec.md)。
+這 4 個關閉工具最初在 0.2.0 版本引入，並繼續包含在 0.2.4 版本中。完整契約見[關閉工具實作規範](docs/closing-tools-spec.md)。
 
 `close_session`、`close_tab` 與 `close_window` 必須且只能使用一個選擇器。ID 只按明確 ID 比對，絕不退化為暱稱比對。暱稱是工作階段範圍內的選擇器：目錄中的名稱會先去除首尾空白並折疊大小寫後比對；產生歧義時回傳錯誤。關閉分頁或視窗時，使用工作階段選擇器會選取其所在的分頁或視窗。不支援依焦點、萬用字元或前綴定位。只要分頁或視窗包含任何超出允許清單的工作階段，就會拒絕關閉。
 
