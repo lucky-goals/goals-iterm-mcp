@@ -21,7 +21,7 @@ goals-iterm-mcp 透過 **iTerm2 Python API**，將支援 MCP 的 Agent 與電腦
 
 > 持續指導專案專用 iTerm 工作階段中的 Coding CLI，直到它完成登入問題的診斷、修復，並通過相關測試。每個階段檢查進度，必要時補充後續指令，最後依照完成條件核對結果。不要重複提交仍在執行的任務；遇到超出本次範圍的決策時詢問我，完成後彙整變更與測試結果。
 
-0.2.4 版本提供 14 個 stdio MCP 工具：工作階段列舉、終端機讀寫、視窗與分頁建立（預設切到前景）、工作階段啟用（`activate_session`）、工作階段命名、唯讀的 `inspect_sessions` 診斷工具，以及 4 個關閉工具。4 個關閉工具最初在 0.2.0 版本引入。契約見[關閉工具實作規範](docs/closing-tools-spec.md)。
+0.2.5 版本提供 14 個 stdio MCP 工具：工作階段列舉、終端機讀寫、視窗與分頁建立（預設切到前景）、工作階段啟用（`activate_session`）、工作階段命名、唯讀的 `inspect_sessions` 診斷工具，以及 4 個關閉工具。4 個關閉工具最初在 0.2.0 版本引入。契約見[關閉工具實作規範](docs/closing-tools-spec.md)。
 
 ## 推薦搭配：goals-iterm-skill
 
@@ -55,10 +55,10 @@ goals-iterm-mcp 透過 **iTerm2 Python API**，將支援 MCP 的 Agent 與電腦
 
 ## 使用 uvx 執行
 
-0.2.4 已發布至 [PyPI](https://pypi.org/project/goals-iterm-mcp/0.2.4/)，該版本提供全部 14 個工具；無需複製儲存庫即可執行：
+0.2.5 已發布至 [PyPI](https://pypi.org/project/goals-iterm-mcp/0.2.5/)，該版本提供全部 14 個工具；無需複製儲存庫即可執行：
 
 ```sh
-uvx --python 3.12 goals-iterm-mcp@0.2.4 serve
+uvx --python 3.12 goals-iterm-mcp@0.2.5 serve
 ```
 
 Python 匯入路徑為 `goals_iterm_mcp`，啟動命令為 `goals-iterm-mcp`。
@@ -68,18 +68,18 @@ Python 匯入路徑為 `goals_iterm_mcp`，啟動命令為 `goals-iterm-mcp`。
 將下列提示詞複製給能執行本機命令、設定 MCP 用戶端的 Agent，把 `[MCP 用戶端]` 替換為實際用戶端，例如 Codex 桌面版或 Claude Code。Agent 需要存取本機 macOS；純雲端聊天無法連接本機 iTerm2。
 
 ```text
-請從 PyPI 安裝 goals-iterm-mcp 0.2.4，並設定至 [MCP 用戶端]。
+請從 PyPI 安裝 goals-iterm-mcp 0.2.5，並設定至 [MCP 用戶端]。
 專案網址：https://github.com/lucky-goals/goals-iterm-mcp
 
 1. 確認本機是 macOS，已安裝並執行 iTerm2。檢查 uv/uvx 是否存在；
    若未安裝，依 uv 官方說明安裝。使用 Python 3.12，不要複製儲存庫，
    不依賴專案目錄中的 .venv。
 2. 執行下列命令，驗證套件可以執行：
-   uvx --python 3.12 goals-iterm-mcp@0.2.4 --help
+   uvx --python 3.12 goals-iterm-mcp@0.2.5 --help
 3. 檢查用戶端現有的 MCP 設定，保留其他設定。在使用者層級設定中新增或更新
    一個名為 iterm 的 stdio 服務，避免重複安裝：
    command：本機 uvx 的絕對路徑
-   args：["--python", "3.12", "goals-iterm-mcp@0.2.4", "serve"]
+   args：["--python", "3.12", "goals-iterm-mcp@0.2.5", "serve"]
    使用該用戶端支援的設定格式與位置。修改現有設定前先備份，不變更其他服務。
 4. 如有需要，指導我啟用 iTerm2 Python API 並核准授權對話框。
    依用戶端支援的方式重新載入 MCP；若需要我手動重新啟動用戶端，請明確告知。
@@ -124,7 +124,7 @@ git pull --ff-only
 
 依用戶端支援的方式重新啟動或連接 `iterm` MCP，必要時重新啟動用戶端。更新磁碟檔案不會替換已執行的服務程序。Codex 可使用 **設定 → MCP servers → Restart**，或重新啟動 Codex；參見 [官方 MCP 設定說明](https://learn.chatgpt.com/docs/extend/mcp?surface=cli)。
 
-重新連線後，查詢目前用戶端實際載入的工具列表，並僅呼叫 `list_sessions` 驗證連線。工具列表應符合安裝版本；0.2.4 版本應有 14 個工具，包括 `activate_session`、唯讀的 `inspect_sessions` 診斷工具，以及 `close_session`、`close_tab`、`close_window`、`clean_all_sessions`。獨立程序握手成功不代表既有對話已刷新工具；若仍顯示舊介面，重新連線或開啟新對話後再檢查。升級驗收不需要建立、關閉終端或傳送輸入。啟動 Python 時禁止使用 `--reload`。
+重新連線後，查詢目前用戶端實際載入的工具列表，並僅呼叫 `list_sessions` 驗證連線。工具列表應符合安裝版本；0.2.5 版本應有 14 個工具，包括 `activate_session`、唯讀的 `inspect_sessions` 診斷工具，以及 `close_session`、`close_tab`、`close_window`、`clean_all_sessions`。獨立程序握手成功不代表既有對話已刷新工具；若仍顯示舊介面，重新連線或開啟新對話後再檢查。升級驗收不需要建立、關閉終端或傳送輸入。啟動 Python 時禁止使用 `--reload`。
 
 也可以將以下提示詞交給本機 Agent：
 
@@ -166,7 +166,7 @@ MCP 用戶端設定範例（請替換為你的絕對路徑）：
 
 選用參數：
 
-- `--read-only`：0.2.4 套件提供 4 個唯讀工具：`list_sessions`、`read_screen`、`read_history` 與 `inspect_sessions`。
+- `--read-only`：0.2.5 套件提供 4 個唯讀工具：`list_sessions`、`read_screen`、`read_history` 與 `inspect_sessions`。
 - `--session-id <ID>`：限制為指定工作階段，可重複傳入以允許多個工作階段。啟用後禁止建立視窗與分頁。
 
 預設可操作目前使用者 iTerm 中的所有工作階段。讀取與傳送操作必須傳入 `list_sessions` 回傳的精確 `session_id`；關閉工具也支援下方說明的明確選擇器。不會依焦點、萬用字元、前綴或標題推測目標。
@@ -192,13 +192,13 @@ MCP 用戶端設定範例（請替換為你的絕對路徑）：
 
 ### 唯讀工作階段能力稽核
 
-`inspect_sessions` 是 0.2.4 套件中的唯讀診斷工具。`session_id` 與 `nickname` 互斥。傳入精確 `session_id` 或唯一暱稱（去除前後空白並折疊大小寫）時檢查一個已授權工作階段；省略兩者時檢查目前全部已授權可見工作階段。選擇器無效、有歧義、不可用或超出授權範圍時，工具會在不寫入終端的情況下失敗。
+`inspect_sessions` 是 0.2.5 套件中的唯讀診斷工具。`session_id` 與 `nickname` 互斥。傳入精確 `session_id` 或唯一暱稱（去除前後空白並折疊大小寫）時檢查一個已授權工作階段；省略兩者時檢查目前全部已授權可見工作階段。選擇器無效、有歧義、不可用或超出授權範圍時，工具會在不寫入終端的情況下失敗。
 
 每項結果包含工作階段、分頁與視窗身分，以及有限的 `prompt`、`process`、`cli`、`terminal_activity`、`business_acceptance` 和 `close_readiness` 部分。診斷可能回報證據是否可用、觀測到的活動、穩定進程/CLI 身分、聊天持久化觀察、阻礙代碼和處置建議。`business_acceptance` 始終為 `not_observed`；`close_readiness` 僅供參考，其 `status` 為 `eligible_if_unchanged`、`blocked` 或 `unknown`，只有前者對應 `ready=true`。即使結果為 `ready: true`，也不代表取得授權或關閉一定成功；任何生命週期寫入前都必須重新探測。該工具只讀取證據，不會傳送終端輸入、退出 CLI、保存恢復回執或呼叫原生關閉。
 
 ### 關閉工具
 
-這 4 個關閉工具最初在 0.2.0 版本引入，並繼續包含在 0.2.4 版本中。完整契約見[關閉工具實作規範](docs/closing-tools-spec.md)。
+這 4 個關閉工具最初在 0.2.0 版本引入，並繼續包含在 0.2.5 版本中。完整契約見[關閉工具實作規範](docs/closing-tools-spec.md)。
 
 `close_session`、`close_tab` 與 `close_window` 必須且只能使用一個選擇器。ID 只按明確 ID 比對，絕不退化為暱稱比對。暱稱是工作階段範圍內的選擇器：目錄中的名稱會先去除首尾空白並折疊大小寫後比對；產生歧義時回傳錯誤。關閉分頁或視窗時，使用工作階段選擇器會選取其所在的分頁或視窗。不支援依焦點、萬用字元或前綴定位。只要分頁或視窗包含任何超出允許清單的工作階段，就會拒絕關閉。
 
@@ -206,7 +206,7 @@ MCP 用戶端設定範例（請替換為你的絕對路徑）：
 
 在首次中斷、退出 CLI 或關閉原生物件之前，服務會先寫入私有復原記錄，只保留中繼資料，不保存終端機正文、憑證或聊天內容。已辨識的聊天 CLI 必須在中斷或退出前提供實際 chat ID；服務不會只為發現 ID 而向執行中或未知的 CLI 傳送聊天文字或斜線命令。一般 shell 和一般工作階段的 `cli_sessions` 為空；未知 CLI 身分不會被悄悄降級成 shell 或一般工作階段。如果目前行程或聊天身分的證據不可用，或無法與目標繫結，操作會安全失敗（清理時可以將該工作階段回報為跳過）。畫面無輸出、執行時間、低 CPU、看起來已完成的回答或工作階段清單中的 `in_progress` 都不是完成證據。CLI 退出有時間上限並會驗證；如果無法驗證退出，服務不會為該目標發出原生關閉要求，但 iTerm 設定的「退出時自動關閉」行為仍可能因 CLI 自身退出而移除分頁。服務不會依名稱殺掉共用守護行程或其他行程。
 
-目前復原支援刻意保持狹窄。Claude 與 Codex 只能透過繫結 chat ID 的可信行程登記，或透過目前行程確實開啟的 transcript/rollout 檔案識別聊天；只出現在啟動參數中的 UUID 會被回報，但仍會阻止中斷。Kiro 的保存工作階段清單和啟動參數都不能證明目前聊天身分，因此必須有與行程繫結的已知 ID；即使 `force=true`，無法證明的身分也會被拒絕。Cursor 的被動路徑只接受由提供的 PID 目前開啟的受辨識記錄檔取得的 UUID；只有啟動參數並不足夠。除非有可信的生命週期證據，CLI 工作活動通常仍為 `unknown`；配接器不會自動擷取每個聊天或所有正在執行的 CLI。
+目前復原支援刻意保持狹窄。Claude 與 Codex 只能透過繫結 chat ID 的可信行程登記，或透過目前行程確實開啟的 transcript/rollout 檔案識別聊天；只出現在啟動參數中的 UUID 會被回報，但仍會阻止中斷。DSH（`dsh` / `dsh-tui`，含 `dst`）採用相同的受限規則：目前工作階段身分需要可信登記，或目前行程在 `sessions/` 下確實開啟了根工作階段的 `session.lock`/JSONL 記錄檔（會自動忽略行程內活躍的 `subagent` 鎖定）；僅出現在命令列 `--session-id`/`--resume` 中的 ID 只會標記為 `startup_only`，而 `dsh web` 等非單一聊天模式會保持未驗證狀態。Kiro 的保存工作階段清單和啟動參數都不能證明目前聊天身分，因此必須有與行程繫結的已知 ID；即使 `force=true`，無法證明的身分也會被拒絕。Cursor 的被動路徑只接受由提供的 PID 目前開啟的受辨識記錄檔取得的 UUID；只有啟動參數並不足夠。除非有可信的生命週期證據，CLI 工作活動通常仍為 `unknown`；配接器不會自動擷取每個聊天或所有正在執行的 CLI。
 
 結果包含 `operation`、`status`、`force`、`dry_run`、`target`、復原記錄 ID 與路徑，以及已關閉、已跳過、失敗和未知工作階段清單。`status` 為 `closed`、`partial`、`refused`、`noop`、`dry_run` 或 `unknown` 其中之一。每個工作階段結果包含 iTerm ID、暱稱、`cli_sessions`、中斷、退出和關閉狀態。聊天記錄包含 `cli`、`chat_uuid`、`cwd`、身分來源、持久化狀態和結構化的復原 executable/argv。`chat_uuid` 只是聊天識別；它本身不能證明歷史已保存，也不能證明復原命令已測試成功，這些資訊由獨立結果欄位表示。關閉後會重新整理拓撲，因為 API 確認不等於已關閉。遺失或逾時的回應會變成 `unknown`，不會自動重試。拒絕、失敗和未知操作會以帶結構化資料的 MCP 工具錯誤回傳；只有清理跳過時不算錯誤。部分結果會回報已完成的副作用，不會透過重新開啟終端機回滾。試執行不會傳送輸入、寫入復原記錄、修改名稱或關閉物件。
 

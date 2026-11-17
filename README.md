@@ -21,7 +21,7 @@ For example, give the supervising agent this goal:
 
 > Guide the coding CLI in the project's dedicated iTerm session until it has diagnosed the login issue, implemented a fix, and passed the relevant tests. Inspect progress between steps, provide follow-up instructions when needed, and verify the final result against these criteria. Do not duplicate tasks that are still running. Ask me when a decision outside this scope is required, and report completion with the changes and test results.
 
-The 0.2.4 release provides 14 stdio MCP tools: session discovery, terminal read/write, window/tab creation (foregrounded by default), session activation (`activate_session`), session naming, the read-only `inspect_sessions` diagnostic, and four closing tools. The four closing tools were first introduced in version 0.2.0. See the [closing-tools implementation specification](docs/closing-tools-spec.md) for the contract.
+The 0.2.5 release provides 14 stdio MCP tools: session discovery, terminal read/write, window/tab creation (foregrounded by default), session activation (`activate_session`), session naming, the read-only `inspect_sessions` diagnostic, and four closing tools. The four closing tools were first introduced in version 0.2.0. See the [closing-tools implementation specification](docs/closing-tools-spec.md) for the contract.
 
 ## Recommended companion: goals-iterm-skill
 
@@ -55,10 +55,10 @@ Ensure new iTerm windows and tabs inherit the required configuration. goals-iter
 
 ## Run with uvx
 
-Version 0.2.4 is available on [PyPI](https://pypi.org/project/goals-iterm-mcp/0.2.4/). This release includes all 14 tools. Run it without cloning this repository:
+Version 0.2.5 is available on [PyPI](https://pypi.org/project/goals-iterm-mcp/0.2.5/). This release includes all 14 tools. Run it without cloning this repository:
 
 ```sh
-uvx --python 3.12 goals-iterm-mcp@0.2.4 serve
+uvx --python 3.12 goals-iterm-mcp@0.2.5 serve
 ```
 
 The Python import path is `goals_iterm_mcp`, and the command is `goals-iterm-mcp`.
@@ -68,18 +68,18 @@ The Python import path is `goals_iterm_mcp`, and the command is `goals-iterm-mcp
 Copy the prompt below into an agent that can run local commands and configure your MCP client. Replace `[MCP client]` with your client, such as Codex desktop or Claude Code. Local macOS access is required; a cloud-only chat cannot connect to your local iTerm2.
 
 ```text
-Please install goals-iterm-mcp 0.2.4 from PyPI and configure it in [MCP client].
+Please install goals-iterm-mcp 0.2.5 from PyPI and configure it in [MCP client].
 Repository: https://github.com/lucky-goals/goals-iterm-mcp
 
 1. Check that this computer runs macOS and has iTerm2 installed and running.
    Check for uv/uvx; if missing, install uv using its official instructions.
    Use Python 3.12. Do not clone the repository or require a project .venv.
 2. Verify the package with:
-   uvx --python 3.12 goals-iterm-mcp@0.2.4 --help
+   uvx --python 3.12 goals-iterm-mcp@0.2.5 --help
 3. Inspect the client's existing MCP configuration and preserve unrelated settings.
    Add or update one user-level stdio server named "iterm", avoiding duplicates:
    command: the absolute path to uvx on this computer
-   args: ["--python", "3.12", "goals-iterm-mcp@0.2.4", "serve"]
+   args: ["--python", "3.12", "goals-iterm-mcp@0.2.5", "serve"]
    Use the client's supported configuration format and location. Back up an
    existing configuration before editing; do not change other servers.
 4. Guide me to enable iTerm2's Python API and approve its authorization dialog
@@ -128,7 +128,7 @@ If Git refuses the update, resolve the local changes or branch divergence before
 
 Restart/reconnect the `iterm` MCP server using the client's supported control, or restart the client if necessary. Updating files does not replace an already running server. For Codex, use **Settings → MCP servers → Restart**, or restart Codex. See the [official MCP configuration guide](https://learn.chatgpt.com/docs/extend/mcp?surface=cli).
 
-After reconnecting, query the tools actually available in that client and run only `list_sessions`. Match the tool list to the installed release; for version 0.2.4, verify all 14 tools, including `activate_session`, the read-only `inspect_sessions` diagnostic, and `close_session`, `close_tab`, `close_window`, and `clean_all_sessions`. A standalone handshake does not prove an existing conversation has refreshed its tools. If it still lists the old interfaces, reconnect or start a new conversation and check again. Do not create/close terminals or send input just to verify an upgrade. Never start Python with `--reload`.
+After reconnecting, query the tools actually available in that client and run only `list_sessions`. Match the tool list to the installed release; for version 0.2.5, verify all 14 tools, including `activate_session`, the read-only `inspect_sessions` diagnostic, and `close_session`, `close_tab`, `close_window`, and `clean_all_sessions`. A standalone handshake does not prove an existing conversation has refreshed its tools. If it still lists the old interfaces, reconnect or start a new conversation and check again. Do not create/close terminals or send input just to verify an upgrade. Never start Python with `--reload`.
 
 You can also ask a local agent to do the update:
 
@@ -173,7 +173,7 @@ Example MCP client configuration (replace the command with your absolute path):
 
 Optional arguments:
 
-- `--read-only`: the 0.2.4 package exposes four read-only tools: `list_sessions`, `read_screen`, `read_history`, and `inspect_sessions`.
+- `--read-only`: the 0.2.5 package exposes four read-only tools: `list_sessions`, `read_screen`, `read_history`, and `inspect_sessions`.
 - `--session-id <ID>`: restrict access to a specific session; repeat to allow multiple sessions. Window and tab creation is disabled when this restriction is active.
 
 By default, the server can operate on all iTerm sessions belonging to the current user. Read and send operations require an exact `session_id` from `list_sessions`; closing tools also accept the explicit selectors documented below. Targets are never inferred from focus, wildcards, prefixes, or titles.
@@ -199,13 +199,13 @@ By default, the server can operate on all iTerm sessions belonging to the curren
 
 ### Read-only session capability audit
 
-`inspect_sessions` is an advisory, read-only diagnostic included in the 0.2.4 package. `session_id` and `nickname` are mutually exclusive. An exact `session_id` or a unique nickname (trimmed and case-folded) selects one authorized session; omitting both inspects every currently authorized visible session. Invalid, ambiguous, unavailable, or out-of-scope selectors fail without terminal writes.
+`inspect_sessions` is an advisory, read-only diagnostic included in the 0.2.5 package. `session_id` and `nickname` are mutually exclusive. An exact `session_id` or a unique nickname (trimmed and case-folded) selects one authorized session; omitting both inspects every currently authorized visible session. Invalid, ambiguous, unavailable, or out-of-scope selectors fail without terminal writes.
 
 Each result includes the session, tab, and window identity plus bounded `prompt`, `process`, `cli`, `terminal_activity`, `business_acceptance`, and `close_readiness` sections. The diagnostic may report whether evidence is available, observed activity, stable process/CLI identity, chat persistence observations, a blocker code, and a remediation suggestion. `business_acceptance` is always `not_observed`; `close_readiness` is advisory only, with `status` set to `eligible_if_unchanged`, `blocked`, or `unknown` and `ready` true only for `eligible_if_unchanged`. Even a `ready: true` result is not authorization or proof that a close will succeed. Re-probe immediately before any lifecycle write. The tool reads evidence only: it does not send terminal input, exit a CLI, persist a recovery receipt, or invoke native close.
 
 ### Closing tools
 
-The four closing tools were first introduced in version 0.2.0 and remain included in version 0.2.4. The complete contract is in the [closing-tools implementation specification](docs/closing-tools-spec.md).
+The four closing tools were first introduced in version 0.2.0 and remain included in version 0.2.5. The complete contract is in the [closing-tools implementation specification](docs/closing-tools-spec.md).
 
 `close_session`, `close_tab`, and `close_window` require exactly one selector. IDs are matched explicitly and are never treated as nickname fallbacks. A nickname is a session-scoped selector that matches the catalogue name after trimming and case-folding; ambiguity is an error. For a tab or window close, a session selector chooses its containing tab or window. There is no focus, wildcard, or prefix targeting. A tab or window containing any session outside the configured allowlist is refused.
 
@@ -213,7 +213,7 @@ Ordinary closes preflight every affected session before sending terminal input. 
 
 Before the first interruption, CLI exit, or native close, the service writes a private recovery receipt containing metadata only. A recognized chat CLI must provide its actual chat ID before interruption or exit; the service does not send chat text or slash commands merely to discover that ID. Plain shells and ordinary jobs have an empty `cli_sessions` array, and unknown CLI identity is never silently downgraded to a shell or job. If current-process or chat identity evidence is unavailable or cannot be tied to the target, the operation fails closed (cleanup may report the session as skipped). Screen silence, age, low CPU, a completed-looking answer, or a session-list `in_progress` value is not completion evidence. CLI exit is bounded and verified; if exit cannot be verified, the service does not issue a native close for that target, although iTerm's configured auto-close-on-exit behavior may still remove a pane as a side effect of the CLI's own exit. The service never kills a shared daemon or a process selected only by name.
 
-Current recovery support is intentionally narrow. Claude and Codex can identify a chat from a trusted process registration with a bound chat ID or a transcript/rollout file opened by the exact current process; a UUID found only in startup arguments is reported but remains blocked. Kiro's saved-session listing and startup arguments do not prove current chat identity, so it requires a process-bound known ID and refuses an unproven identity even with `force`. Cursor's passive path accepts a UUID only from a recognized log file opened by the supplied PID; startup arguments alone are insufficient. CLI task activity is generally `unknown` unless trusted lifecycle evidence supplies it; the adapter does not automatically capture every chat or every running CLI.
+Current recovery support is intentionally narrow. Claude and Codex can identify a chat from a trusted process registration with a bound chat ID or a transcript/rollout file opened by the exact current process; a UUID found only in startup arguments is reported but remains blocked. DSH (`dsh` / `dsh-tui`, including `dst`) follows the same bounded rule: current session identity requires a trusted registration or an open root `session.lock`/JSONL log under `sessions/` (ignoring active in-process `subagent` locks), while `--session-id`/`--resume` found only on argv stays `startup_only` and non-chat modes such as `dsh web` stay unverified. Kiro's saved-session listing and startup arguments do not prove current chat identity, so it requires a process-bound known ID and refuses an unproven identity even with `force`. Cursor's passive path accepts a UUID only from a recognized log file opened by the supplied PID; startup arguments alone are insufficient. CLI task activity is generally `unknown` unless trusted lifecycle evidence supplies it; the adapter does not automatically capture every chat or every running CLI.
 
 Results include `operation`, `status`, `force`, `dry_run`, `target`, recovery receipt IDs and paths, and closed, skipped, failed, and unknown session lists. `status` is one of `closed`, `partial`, `refused`, `noop`, `dry_run`, or `unknown`. Session results include iTerm IDs, nickname, `cli_sessions`, interruption, exit, and closure status. Chat records include `cli`, `chat_uuid`, `cwd`, identity source, persistence status, and a structured resume executable/argv. `chat_uuid` identifies the chat, but it does not by itself prove that history was saved or that the resume command was tested; those are separate result fields. The topology is refreshed after a close, because an API acknowledgement is not closure proof. Lost or timed-out responses become `unknown` and are never retried automatically. Refused, failed, and unknown operations are tool errors with structured data; cleanup skips alone are not errors. Partial results report completed side effects and do not reopen terminals. Dry runs send no input, write no receipts, change no names, and close no objects.
 

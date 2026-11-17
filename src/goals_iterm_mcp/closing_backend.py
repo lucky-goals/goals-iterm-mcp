@@ -26,7 +26,7 @@ import uuid
 from collections.abc import Callable, Iterable, Mapping, Sequence
 from typing import Any
 
-from .cli_recovery import CliRecoveryAdapter, normalize_cli
+from .cli_recovery import CliRecoveryAdapter, _valid_chat_id, normalize_cli
 from .errors import DomainError
 from .process_inspection import MacOSProcessProvider, ProcessIdentity, ProcessRecord
 
@@ -76,6 +76,8 @@ _KNOWN_DIAGNOSTIC_SOURCES = frozenset(
         "claude_pid",
         "codex_pid",
         "cursor_pid",
+        "dsh_pid",
+        "dsh-tui_pid",
         "caller_claim",
         "unrecognized",
         "row",
@@ -125,6 +127,13 @@ def _safe_uuid(value: Any) -> str | None:
         return None
 
 
+def _safe_chat_id(value: Any, cli: str | None = None) -> str | None:
+    uuid_value = _safe_uuid(value)
+    if uuid_value is not None:
+        return uuid_value
+    return _valid_chat_id(value, cli)
+
+
 def _safe_identity(value: Any) -> dict[str, Any] | None:
     """Project a stable identity without exposing arbitrary process fields."""
 
@@ -169,6 +178,10 @@ _KNOWN_DIAGNOSTIC_REASONS = {
     "Cursor process identity is bound; task activity is not passively exposed",
     "Kiro process identity is registered; task activity is not passively exposed",
     "Kiro exposes saved-session status but no process-bound foreground UUID",
+    "dsh has no single recoverable foreground chat session",
+    "dsh-tui has no single recoverable foreground chat session",
+    "dsh has no passive foreground chat-id API",
+    "dsh-tui has no passive foreground chat-id API",
     "CLI provider exposes no current task lifecycle evidence",
     "registration does not provide a current prompt or lifecycle event",
     "observe() was given an activity claim without a live prompt/event evidence",
@@ -902,7 +915,24 @@ class ClosingBackend:
             if item_map is not None:
                 values.extend(item_map.get(key) for key in ("cli", "program", "executable"))
         names = {normalized for value in values if (normalized := normalize_cli(value)) is not None}
-        return next(iter(names)) if len(names) == 1 else None
+        if len(names) == 1:
+            return next(iter(names))
+        if names == {"dsh", "dsh-tui"}:
+            session_clis = {
+                normalized
+                for item in cli_sessions
+                if (item_map := _mapping(item)) is not None
+                and (normalized := normalize_cli(item_map.get("cli") or item_map.get("program") or item_map.get("executable")))
+                in {"dsh", "dsh-tui"}
+            }
+            if len(session_clis) == 1:
+                return next(iter(session_clis))
+            if cli_value is not None:
+                explicit_cli = normalize_cli(cli_value.get("cli") or cli_value.get("program"))
+                if explicit_cli in {"dsh", "dsh-tui"}:
+                    return explicit_cli
+            return "dsh-tui"
+        return None
 
     @staticmethod
     def _diagnostic_remediation(
@@ -1067,8 +1097,8 @@ class ClosingBackend:
                 item_map = _mapping(item)
                 if item_map is None:
                     continue
-                chat_uuid = _safe_uuid(item_map.get("chat_uuid"))
                 cli_name = normalize_cli(item_map.get("cli") or item_map.get("program"))
+                chat_uuid = _safe_chat_id(item_map.get("chat_uuid"), cli_name)
                 if chat_uuid is None or cli_name is None:
                     continue
                 source = _safe_source(item_map.get("identity_source"), "unavailable")

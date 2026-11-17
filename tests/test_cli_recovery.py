@@ -308,6 +308,113 @@ class CliRecoveryTests(unittest.TestCase):
 
         self.assertEqual(signals, [(main_pid, signal.SIGINT)])
 
+    def test_dsh_headless_explicit_session_id_and_resume_argv(self):
+        session_id = f"session-{CHAT}"
+
+        def runner(argv, **_kwargs):
+            if "command=" in argv:
+                return (
+                    f"/opt/homebrew/bin/node /opt/homebrew/bin/dsh headless "
+                    f"--session-id {session_id} --json secret-token"
+                ).encode()
+            return b""
+
+        adapter = CliRecoveryAdapter(runner=runner)
+        probe = adapter.observe(
+            "s1", cli="dsh", pid=PID, process_start="start-1"
+        ).as_probe()
+
+        self.assertEqual(probe["blocked_code"], "CLI_IDENTITY_STARTUP_ONLY")
+        self.assertEqual(probe["cli_sessions"][0]["cli"], "dsh")
+        self.assertEqual(probe["cli_sessions"][0]["chat_uuid"], session_id)
+        self.assertEqual(
+            probe["cli_sessions"][0]["resume"],
+            {"executable": "dsh", "argv": ["headless", "--session-id", session_id]},
+        )
+        self.assertNotIn("secret-token", json.dumps(probe))
+
+    def test_dsh_tui_profile_binary_and_run_resume_argv(self):
+        session_id = f"session-{CHAT}"
+
+        def profile_runner(argv, **_kwargs):
+            if "command=" in argv:
+                return f"node /opt/homebrew/bin/dsh --profile dsh-tui --resume {CHAT}".encode()
+            return b""
+
+        adapter = CliRecoveryAdapter(runner=profile_runner)
+        profile_probe = adapter.observe(
+            "s1", cli="dsh", pid=PID, process_start="start-1"
+        ).as_probe()
+        self.assertEqual(
+            profile_probe["cli_sessions"][0]["resume"],
+            {"executable": "dsh", "argv": ["--profile", "dsh-tui", "--resume", CHAT]},
+        )
+
+        def tui_runner(argv, **_kwargs):
+            if "command=" in argv:
+                return f"node /opt/homebrew/bin/dst --resume {session_id}".encode()
+            return b""
+
+        tui_probe = CliRecoveryAdapter(runner=tui_runner).observe(
+            "s2", cli="dst", pid=PID, process_start="start-1"
+        ).as_probe()
+        self.assertEqual(tui_probe["cli_sessions"][0]["cli"], "dsh-tui")
+        self.assertEqual(
+            tui_probe["cli_sessions"][0]["resume"],
+            {"executable": "dsh-tui", "argv": ["--resume", session_id]},
+        )
+
+        def run_runner(argv, **_kwargs):
+            if "command=" in argv:
+                return f"node /opt/homebrew/bin/dsh-tui run --session-id {session_id}".encode()
+            return b""
+
+        run_probe = CliRecoveryAdapter(runner=run_runner).observe(
+            "s3", cli="dsh-tui", pid=PID, process_start="start-1"
+        ).as_probe()
+        self.assertEqual(
+            run_probe["cli_sessions"][0]["resume"],
+            {"executable": "dsh-tui", "argv": ["run", "--session-id", session_id]},
+        )
+
+    def test_dsh_web_mode_refuses_single_session_claim(self):
+        session_id = f"session-{CHAT}"
+
+        def runner(argv, **_kwargs):
+            if "command=" in argv:
+                return b"node /opt/homebrew/bin/dsh web --port 3000"
+            if "-Fn" in argv:
+                return (
+                    f"p{PID}\nn/Users/example/.dsh/sessions/--work--/{session_id}/session.lock\n".encode()
+                )
+            return b""
+
+        probe = CliRecoveryAdapter(runner=runner).observe(
+            "s1", cli="dsh", pid=PID, process_start="start-1"
+        ).as_probe()
+
+        self.assertEqual(probe["blocked_code"], "CLI_IDENTITY_MISSING")
+        self.assertEqual(probe["cli_sessions"], [])
+
+    def test_dsh_tui_non_dsh_backend_skips_dsh_storage(self):
+        session_id = f"session-{CHAT}"
+
+        def runner(argv, **_kwargs):
+            if "command=" in argv:
+                return b"node /opt/homebrew/bin/dsh-tui --backend claude"
+            if "-Fn" in argv:
+                return (
+                    f"p{PID}\nn/Users/example/.dsh/sessions/--work--/{session_id}/session.lock\n".encode()
+                )
+            return b""
+
+        probe = CliRecoveryAdapter(runner=runner).observe(
+            "s1", cli="dsh-tui", pid=PID, process_start="start-1"
+        ).as_probe()
+
+        self.assertEqual(probe["blocked_code"], "CLI_IDENTITY_MISSING")
+        self.assertEqual(probe["cli_sessions"], [])
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -40,7 +40,80 @@ from typing import Any, Literal
 import uuid
 
 
-SUPPORTED_CLIS = frozenset({"claude", "codex", "cursor", "kiro"})
+SUPPORTED_CLIS = frozenset({"claude", "codex", "cursor", "dsh", "dsh-tui", "kiro"})
+_DSH_CLIS = frozenset({"dsh", "dsh-tui"})
+_DSH_NON_CHAT_MODES = frozenset({"web", "sdk", "sdk-minimal", "plugin", "setup"})
+_DSH_VALUE_FLAGS = frozenset(
+    {
+        "--add-dir",
+        "--append-system-prompt",
+        "--approval-policy",
+        "--backend",
+        "--cwd",
+        "--dsh-bin",
+        "--env",
+        "--format",
+        "--from-default-profile",
+        "--max-turns",
+        "--model",
+        "--output-format",
+        "--patch",
+        "--permission-mode",
+        "--profile",
+        "--provider",
+        "--resume",
+        "--root",
+        "--session",
+        "--session-id",
+        "--system-prompt",
+        "--timeout",
+        "--workspace",
+    }
+)
+_NODE_STOP_FLAGS = frozenset(
+    {
+        "-c",
+        "--check",
+        "-e",
+        "--eval",
+        "-h",
+        "--help",
+        "-i",
+        "--interactive",
+        "-p",
+        "--print",
+        "-v",
+        "--version",
+    }
+)
+_NODE_VALUE_FLAGS = frozenset(
+    {
+        "-C",
+        "--conditions",
+        "--diagnostic-dir",
+        "--env-file",
+        "--env-file-if-exists",
+        "--experimental-loader",
+        "--heapsnapshot-signal",
+        "--import",
+        "--input-type",
+        "--inspect",
+        "--inspect-brk",
+        "--inspect-port",
+        "--loader",
+        "--max-old-space-size",
+        "-r",
+        "--redirect-warnings",
+        "--require",
+        "--run",
+        "--test-name-pattern",
+        "--test-reporter",
+        "--test-reporter-destination",
+        "--test-shard",
+        "--title",
+        "--watch-path",
+    }
+)
 Activity = Literal["idle", "busy", "waiting", "unknown", "exited"]
 
 # These values are intentionally about the *quality of an observation*, not
@@ -70,6 +143,7 @@ DEFAULT_CURSOR_LOG_BYTES = 256 * 1024
 DEFAULT_CURSOR_LOG_LINES = 4096
 DEFAULT_KIRO_OUTPUT_BYTES = 512 * 1024
 DEFAULT_KIRO_RECORDS = 2048
+DEFAULT_DSH_HEADER_BYTES = 16 * 1024
 DEFAULT_PROCESS_ARG_BYTES = 64 * 1024
 
 _UUID_RE = re.compile(
@@ -81,6 +155,9 @@ _GENERIC_ID_RE = re.compile(
     r"^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-"
     r"[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$"
 )
+_DSH_SAFE_ID_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]{0,95}$")
+_DSH_LOG_NAME_RE = re.compile(r"^session(?:\.v(\d+))?\.jsonl(?:\.zstd)?$")
+_DSH_HEX_ESCAPE_RE = re.compile(r"~([0-9A-Fa-f]{4})")
 _UUID_BYTES_RE = re.compile(
     rb"([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-"
     rb"[0-9a-fA-F]{4}-[0-9a-fA-F]{12})"
@@ -100,7 +177,7 @@ class _PreExitRefusalError(RuntimeError):
 
 
 def normalize_cli(value: Any) -> str | None:
-    """Map executable/context names to the four supported CLI names."""
+    """Map executable/context names to the supported CLI names."""
 
     if not isinstance(value, str):
         return None
@@ -111,6 +188,25 @@ def normalize_cli(value: Any) -> str | None:
         return "codex"
     if name in {"cursor", "cursor.exe", "cursor-agent", "cursor-agent.exe", "agent"}:
         return "cursor"
+    if name in {
+        "dsh",
+        "dsh.exe",
+        "dsh.cmd",
+        "dsh.ps1",
+        "dsh-headless",
+        "dsh-headless.exe",
+    }:
+        return "dsh"
+    if name in {
+        "dsh-tui",
+        "dsh-tui.exe",
+        "dsh-tui.cmd",
+        "dsh-tui.ps1",
+        "dst",
+        "dst.exe",
+        "dst.cmd",
+    }:
+        return "dsh-tui"
     if name in {"kiro", "kiro.exe", "kiro-cli", "kiro-cli.exe"}:
         return "kiro"
     return None
@@ -123,6 +219,31 @@ def _valid_uuid(value: Any) -> str | None:
         return str(uuid.UUID(value))
     except (ValueError, AttributeError):
         return None
+
+
+def _valid_chat_id(value: Any, cli: str | None = None) -> str | None:
+    """Validate a CLI chat identifier.
+
+    Claude, Codex, Cursor, and Kiro strictly require canonical UUIDs.  ``dsh``
+    and ``dsh-tui`` also allow ``session-<uuid>`` and bounded filesystem-safe
+    custom session IDs.
+    """
+
+    canonical_uuid = _valid_uuid(value)
+    if canonical_uuid is not None:
+        return canonical_uuid
+    normalized_cli = normalize_cli(cli)
+    if normalized_cli not in _DSH_CLIS or not isinstance(value, str):
+        return None
+    if not value or len(value) > 96 or ".." in value:
+        return None
+    if value[:8].lower() == "session-":
+        inner = _valid_uuid(value[8:])
+        if inner is not None:
+            return f"session-{inner}"
+    if _DSH_SAFE_ID_RE.fullmatch(value):
+        return value
+    return None
 
 
 def _safe_cwd(value: Any) -> str | None:
@@ -192,9 +313,13 @@ class ChatEvidence:
         cli = normalize_cli(self.cli)
         if cli is None:
             raise ValueError("unsupported CLI")
-        chat_uuid = _valid_uuid(self.chat_uuid)
+        chat_uuid = _valid_chat_id(self.chat_uuid, cli)
         if chat_uuid is None:
-            raise ValueError("chat_uuid must be a UUID")
+            raise ValueError(
+                "chat_uuid must be a valid DSH session id"
+                if cli in _DSH_CLIS
+                else "chat_uuid must be a UUID"
+            )
         object.__setattr__(self, "cli", cli)
         object.__setattr__(self, "chat_uuid", chat_uuid)
         if self.cwd is not None and _safe_cwd(self.cwd) is None:
@@ -647,6 +772,160 @@ def _cursor_log_paths(pid: int, runner: Callable[..., bytes]) -> tuple[Path, ...
     )
 
 
+@dataclass(frozen=True, slots=True)
+class _DshCommandContext:
+    mode: str | None = None
+    profile: str | None = None
+    explicit_id: str | None = None
+    ambiguous_id: bool = False
+    non_chat_mode: bool = False
+    uses_dsh_storage: bool = True
+
+
+def _process_command_raw(pid: int, runner: Callable[..., bytes]) -> bytes | None:
+    executable = shutil.which("ps") or "/bin/ps"
+    try:
+        return runner(
+            (executable, "-p", str(pid), "-o", "command="),
+            timeout=1.0,
+        )[:DEFAULT_PROCESS_ARG_BYTES]
+    except Exception:
+        return None
+
+
+def _skip_dsh_entrypoint(tokens: list[str]) -> int:
+    if not tokens:
+        return 0
+    first = Path(tokens[0].lstrip("-").replace("\\", "/")).name.casefold()
+    if first not in {"node", "nodejs"}:
+        return 1
+    idx = 1
+    while idx < len(tokens):
+        token = tokens[idx]
+        if token == "--":
+            idx += 1
+            break
+        if not token.startswith("-"):
+            break
+        flag = token.split("=", 1)[0]
+        if flag in _NODE_STOP_FLAGS:
+            return len(tokens)
+        if "=" not in token and token in _NODE_VALUE_FLAGS:
+            idx += 2
+            continue
+        idx += 1
+    return idx + 1 if idx < len(tokens) else len(tokens)
+
+
+def _parse_dsh_command_context(raw: bytes | None, cli: str) -> _DshCommandContext:
+    if not raw:
+        return _DshCommandContext()
+    text = raw[:DEFAULT_PROCESS_ARG_BYTES].decode("utf-8", errors="replace").strip()
+    if not text:
+        return _DshCommandContext()
+    tokens = text.split()
+    arg_start = _skip_dsh_entrypoint(tokens)
+    args = tokens[arg_start:]
+
+    id_flags = {"--session-id", "--resume"}
+    if cli == "dsh-tui":
+        id_flags.add("--session")
+
+    profile: str | None = None
+    backend: str | None = None
+    subcommand: str | None = None
+    print_mode = False
+    seen_positional = False
+    ids: list[str] = []
+
+    i = 0
+    while i < len(args):
+        tok = args[i]
+        if tok == "--":
+            break
+        if tok.startswith("-"):
+            flag, sep, val = tok.partition("=")
+            lower_flag = flag.casefold()
+            if lower_flag in id_flags:
+                candidate = val if sep else (args[i + 1] if i + 1 < len(args) else None)
+                if not sep and candidate is not None:
+                    i += 1
+                cid = _valid_chat_id(candidate, cli)
+                if cid is not None and cid not in ids:
+                    ids.append(cid)
+            elif lower_flag == "--profile":
+                prof = val if sep else (args[i + 1] if i + 1 < len(args) else None)
+                if not sep and prof is not None:
+                    i += 1
+                if prof:
+                    profile = prof.casefold()
+            elif lower_flag == "--backend":
+                be = val if sep else (args[i + 1] if i + 1 < len(args) else None)
+                if not sep and be is not None:
+                    i += 1
+                if be:
+                    backend = be.casefold()
+            elif cli == "dsh-tui" and lower_flag in {"-p", "--print"}:
+                print_mode = True
+            elif not sep and lower_flag in _DSH_VALUE_FLAGS:
+                i += 1
+            i += 1
+            continue
+
+        if not seen_positional:
+            seen_positional = True
+            lower_tok = tok.casefold()
+            if cli == "dsh" and lower_tok in {
+                "headless",
+                "tui",
+                "dsh-tui",
+                "web",
+                "sdk",
+                "sdk-minimal",
+                "plugin",
+                "setup",
+                "acp",
+                "desktop",
+                "agent",
+            }:
+                subcommand = lower_tok
+            elif cli == "dsh-tui" and lower_tok == "run":
+                subcommand = "run"
+        i += 1
+
+    effective_mode = profile or subcommand
+    non_chat_mode = effective_mode in _DSH_NON_CHAT_MODES
+    resolved_profile: str | None = None
+    if cli == "dsh":
+        if effective_mode in {"tui", "dsh-tui"}:
+            mode: str | None = "tui"
+            resolved_profile = effective_mode
+        else:
+            mode = effective_mode
+    else:
+        mode = "run" if (subcommand == "run" or print_mode) else None
+    uses_dsh_storage = True if backend is None else backend in {"dsh", "deepseek-harness"}
+    return _DshCommandContext(
+        mode=mode,
+        profile=resolved_profile,
+        explicit_id=ids[0] if len(ids) == 1 else None,
+        ambiguous_id=len(ids) > 1,
+        non_chat_mode=non_chat_mode,
+        uses_dsh_storage=uses_dsh_storage,
+    )
+
+
+def _dsh_command_context(
+    pid: int,
+    cli: str,
+    runner: Callable[..., bytes],
+) -> _DshCommandContext:
+    normalized = normalize_cli(cli)
+    if normalized not in _DSH_CLIS:
+        return _DshCommandContext()
+    return _parse_dsh_command_context(_process_command_raw(pid, runner), normalized)
+
+
 def _process_command_uuid(
     pid: int,
     cli: str,
@@ -660,15 +939,13 @@ def _process_command_uuid(
     ``None`` so the caller can try a process-opened metadata path.
     """
 
-    executable = shutil.which("ps") or "/bin/ps"
-    try:
-        raw = runner(
-            (executable, "-p", str(pid), "-o", "command="),
-            timeout=1.0,
-        )[:DEFAULT_PROCESS_ARG_BYTES]
-    except Exception:
+    raw = _process_command_raw(pid, runner)
+    if raw is None:
         return None
     normalized = normalize_cli(cli)
+    if normalized in _DSH_CLIS:
+        ctx = _parse_dsh_command_context(raw, normalized)
+        return None if ctx.ambiguous_id else ctx.explicit_id
     if normalized == "claude":
         flags = (b"--session-id", b"--resume")
     elif normalized == "codex":
@@ -696,6 +973,161 @@ def _process_command_uuid(
             if value is not None and value not in matches:
                 matches.append(value)
     return matches[0] if len(matches) == 1 else None
+
+
+def _decode_dsh_segment(segment: str) -> str:
+    return _DSH_HEX_ESCAPE_RE.sub(lambda match: chr(int(match.group(1), 16)), segment)
+
+
+def _is_dsh_session_path(path: Path) -> bool:
+    name = path.name
+    if name != "session.lock" and _DSH_LOG_NAME_RE.fullmatch(name) is None:
+        return False
+    session_dir = path.parent
+    project_dir = session_dir.parent
+    sessions_dir = project_dir.parent
+    if sessions_dir.name != "sessions":
+        return False
+    if sessions_dir.parent.name == ".dsh":
+        return True
+    proj_name = project_dir.name
+    return proj_name == "_no-cwd" or (
+        len(proj_name) > 4 and proj_name.startswith("--") and proj_name.endswith("--")
+    )
+
+
+def _dsh_zstd_executable() -> str | None:
+    found = shutil.which("zstd")
+    if found:
+        return found
+    for candidate in ("/opt/homebrew/bin/zstd", "/usr/local/bin/zstd", "/usr/bin/zstd"):
+        if os.path.isfile(candidate) and os.access(candidate, os.X_OK):
+            return candidate
+    return None
+
+
+def _best_dsh_log_in_dir(session_dir: Path) -> Path | None:
+    candidates: list[tuple[int, int, Path]] = []
+    try:
+        entries = list(session_dir.iterdir())
+    except OSError:
+        return None
+    for entry in entries:
+        match = _DSH_LOG_NAME_RE.fullmatch(entry.name)
+        if match is None:
+            continue
+        try:
+            if not entry.is_file() or entry.stat().st_size <= 0:
+                continue
+        except OSError:
+            continue
+        version = int(match.group(1) or 0)
+        is_zstd = 1 if entry.name.endswith(".zstd") else 0
+        candidates.append((version, is_zstd, entry))
+    if not candidates:
+        return None
+    candidates.sort(key=lambda item: (item[0], item[1]), reverse=True)
+    return candidates[0][2]
+
+
+def _read_dsh_session_origin(log_path: Path) -> str | None:
+    """Read only the first JSONL session-header record to identify subagents.
+
+    Never reads transcript message records or returns raw header fields.
+    """
+
+    raw_line = b""
+    if log_path.name.endswith(".zstd"):
+        zstd_exe = _dsh_zstd_executable()
+        if zstd_exe is None:
+            return None
+        try:
+            proc = subprocess.Popen(
+                (zstd_exe, "-dcq", "--", str(log_path)),
+                stdout=subprocess.PIPE,
+                stderr=subprocess.DEVNULL,
+            )
+        except OSError:
+            return None
+        try:
+            if proc.stdout is not None:
+                raw_line = proc.stdout.readline(DEFAULT_DSH_HEADER_BYTES + 1)
+        except OSError:
+            return None
+        finally:
+            if proc.stdout is not None:
+                try:
+                    proc.stdout.close()
+                except OSError:
+                    pass
+            if proc.poll() is None:
+                proc.terminate()
+            try:
+                proc.wait(timeout=0.5)
+            except (OSError, subprocess.TimeoutExpired):
+                proc.kill()
+                try:
+                    proc.wait(timeout=0.5)
+                except (OSError, subprocess.TimeoutExpired):
+                    pass
+    else:
+        try:
+            with log_path.open("rb") as stream:
+                raw_line = stream.readline(DEFAULT_DSH_HEADER_BYTES + 1)
+        except OSError:
+            return None
+    if not raw_line or len(raw_line) > DEFAULT_DSH_HEADER_BYTES:
+        return None
+    try:
+        payload = json.loads(raw_line.decode("utf-8"))
+    except (UnicodeDecodeError, json.JSONDecodeError):
+        return None
+    if not isinstance(payload, Mapping) or payload.get("type") != "session":
+        return None
+    origin = payload.get("origin")
+    return origin if isinstance(origin, str) and origin else None
+
+
+def _opened_dsh_sessions(
+    pid: int,
+    runner: Callable[..., bytes],
+) -> tuple[tuple[tuple[str, str], ...], bool]:
+    """Extract DSH root session ids from open ``session.lock`` / JSONL files."""
+
+    by_dir: dict[Path, str] = {}
+    for candidate in _opened_paths(pid, runner):
+        if not _is_dsh_session_path(candidate):
+            continue
+        session_dir = candidate.parent
+        if session_dir in by_dir:
+            continue
+        session_id = _valid_chat_id(_decode_dsh_segment(session_dir.name), "dsh")
+        if session_id is None:
+            continue
+        by_dir[session_dir] = session_id
+
+    if not by_dir:
+        return (), False
+
+    persisted: dict[str, str] = {}
+    for session_dir, session_id in by_dir.items():
+        if session_dir.is_dir():
+            best_log = _best_dsh_log_in_dir(session_dir)
+            if best_log is not None:
+                if _read_dsh_session_origin(best_log) == "subagent":
+                    continue
+                persistence = "saved"
+            else:
+                persistence = "empty"
+        else:
+            persistence = "saved"
+        existing = persisted.get(session_id)
+        if existing != "saved":
+            persisted[session_id] = persistence
+
+    if len(persisted) > 1:
+        return (), True
+    return tuple(persisted.items()), False
 
 
 def _opened_uuid_paths(
@@ -744,8 +1176,22 @@ def _resume_spec(cli: str, chat_uuid: str) -> tuple[str, tuple[str, ...]]:
         "claude": ("claude", ("--resume", chat_uuid)),
         "codex": ("codex", ("resume", chat_uuid)),
         "cursor": ("cursor-agent", ("--resume", chat_uuid)),
+        "dsh": ("dsh", ("headless", "--session-id", chat_uuid)),
+        "dsh-tui": ("dsh-tui", ("--resume", chat_uuid)),
         "kiro": ("kiro-cli", ("chat", "--resume-id", chat_uuid)),
     }[cli]
+
+
+def _dsh_resume_spec(
+    cli: str,
+    chat_id: str,
+    context: _DshCommandContext | None = None,
+) -> tuple[str, tuple[str, ...]]:
+    if cli == "dsh" and context is not None and context.mode == "tui":
+        return ("dsh", ("--profile", context.profile or "dsh-tui", "--resume", chat_id))
+    if cli == "dsh-tui" and context is not None and context.mode == "run":
+        return ("dsh-tui", ("run", "--session-id", chat_id))
+    return _resume_spec(cli, chat_id)
 
 
 def _passive_process_chat(
@@ -767,6 +1213,54 @@ def _passive_process_chat(
     normalized = normalize_cli(cli)
     if normalized is None:
         return None, None
+    if normalized in _DSH_CLIS:
+        ctx = _dsh_command_context(pid, normalized, runner)
+        if ctx.ambiguous_id:
+            return None, "CLI_IDENTITY_AMBIGUOUS"
+        if not ctx.uses_dsh_storage:
+            if ctx.explicit_id is None:
+                return None, None
+            executable, argv = _dsh_resume_spec(normalized, ctx.explicit_id, ctx)
+            return (
+                ChatEvidence(
+                    normalized,
+                    ctx.explicit_id,
+                    cwd=cwd,
+                    identity_source="process_argv_startup",
+                    persistence_status="unknown",
+                    resume_executable=executable,
+                    resume_argv=argv,
+                    identity_status="startup_only",
+                ),
+                "CLI_IDENTITY_STARTUP_ONLY",
+            )
+        opened_dsh, ambiguous_open = _opened_dsh_sessions(pid, runner)
+        if ambiguous_open:
+            return None, "CLI_IDENTITY_AMBIGUOUS"
+        if ctx.non_chat_mode:
+            return None, "CLI_IDENTITY_MISSING"
+        opened_id, opened_persistence = opened_dsh[0] if opened_dsh else (None, None)
+        if ctx.explicit_id is not None and opened_id is not None and ctx.explicit_id != opened_id:
+            return None, "CLI_IDENTITY_AMBIGUOUS"
+        value = opened_id or ctx.explicit_id
+        if value is None:
+            return None, None
+        executable, argv = _dsh_resume_spec(normalized, value, ctx)
+        is_opened = opened_id is not None
+        return (
+            ChatEvidence(
+                normalized,
+                value,
+                cwd=cwd,
+                identity_source="process_open_file" if is_opened else "process_argv_startup",
+                persistence_status=opened_persistence if is_opened else "unknown",
+                resume_executable=executable,
+                resume_argv=argv,
+                identity_status="verified" if is_opened else "startup_only",
+            ),
+            None if is_opened else "CLI_IDENTITY_STARTUP_ONLY",
+        )
+
     candidates: list[tuple[str, str]] = []
     explicit = _process_command_uuid(pid, normalized, runner)
     opened = _opened_uuid_paths(pid, normalized, runner)
@@ -1114,12 +1608,7 @@ class CliRecoveryAdapter:
             raise ValueError("unsupported CLI")
         chat: ChatEvidence | None = None
         if chat_uuid is not None:
-            resume = {
-                "claude": ("claude", ("--resume", chat_uuid)),
-                "codex": ("codex", ("resume", chat_uuid)),
-                "cursor": ("cursor-agent", ("--resume", chat_uuid)),
-                "kiro": ("kiro-cli", ("chat", "--resume-id", chat_uuid)),
-            }[normalized]
+            resume = _resume_spec(normalized, chat_uuid)
             chat = ChatEvidence(
                 normalized,
                 chat_uuid,
@@ -1170,12 +1659,7 @@ class CliRecoveryAdapter:
             raise KeyError(session_id)
         normalized = normalize_cli(binding.cli)
         assert normalized is not None
-        resume = {
-            "claude": ("claude", ("--resume", chat_uuid)),
-            "codex": ("codex", ("resume", chat_uuid)),
-            "cursor": ("cursor-agent", ("--resume", chat_uuid)),
-            "kiro": ("kiro-cli", ("chat", "--resume-id", chat_uuid)),
-        }[normalized]
+        resume = _resume_spec(normalized, chat_uuid)
         chat = ChatEvidence(
             normalized,
             chat_uuid,
@@ -1294,6 +1778,110 @@ class CliRecoveryAdapter:
                 result.append(candidate)
         return result
 
+    def _collapse_dsh_wrapper_candidates(
+        self,
+        candidates: list[tuple[str, int, str | None]],
+        process: Any,
+    ) -> list[tuple[str, int, str | None]]:
+        """Collapse a linear parent-child ``dsh-tui``/``dsh`` wrapper chain."""
+
+        if len(candidates) <= 1 or not all(cli in _DSH_CLIS for cli, _pid, _start in candidates):
+            return candidates
+
+        by_pid = {pid: item for item in candidates for _cli, pid, _start in [item]}
+        if len(by_pid) != len(candidates):
+            return candidates
+
+        ppid_by_pid: dict[int, int] = {}
+        if isinstance(process, Mapping):
+            entries: list[Any] = [process]
+            for key in ("active_jobs", "stopped_jobs"):
+                seq = process.get(key)
+                if isinstance(seq, Sequence) and not isinstance(seq, (str, bytes)):
+                    entries.extend(seq)
+            for entry in entries:
+                if not isinstance(entry, Mapping):
+                    continue
+                ident = entry.get("identity")
+                ident_map = ident if isinstance(ident, Mapping) else entry
+                raw_pid = ident_map.get("pid", entry.get("pid"))
+                raw_ppid = entry.get("ppid", ident_map.get("ppid"))
+                try:
+                    ep = int(raw_pid)
+                    epp = int(raw_ppid)
+                except (TypeError, ValueError):
+                    continue
+                if ep in by_pid and epp > 0:
+                    ppid_by_pid[ep] = epp
+
+        ps_exe = shutil.which("ps") or "/bin/ps"
+        for pid in by_pid:
+            if pid in ppid_by_pid:
+                continue
+            try:
+                raw = self.runner((ps_exe, "-p", str(pid), "-o", "ppid="), timeout=1.0)
+                parsed = int(raw.decode("ascii", errors="strict").strip().split()[0])
+                if parsed > 0:
+                    ppid_by_pid[pid] = parsed
+            except (OSError, TypeError, ValueError, UnicodeError, IndexError):
+                pass
+
+        children_in_set: dict[int, list[int]] = {pid: [] for pid in by_pid}
+        parent_in_set: dict[int, int] = {}
+        for pid in by_pid:
+            parent = ppid_by_pid.get(pid)
+            if parent in by_pid and parent != pid:
+                parent_in_set[pid] = parent
+                children_in_set[parent].append(pid)
+
+        roots = [pid for pid in by_pid if pid not in parent_in_set]
+        leaves = [pid for pid in by_pid if not children_in_set[pid]]
+        if (
+            len(roots) != 1
+            or len(leaves) != 1
+            or any(len(children_in_set[pid]) > 1 for pid in by_pid)
+        ):
+            return candidates
+
+        chain: list[tuple[str, int, str | None]] = []
+        cursor_pid: int | None = roots[0]
+        seen_pids: set[int] = set()
+        while cursor_pid is not None and cursor_pid not in seen_pids:
+            seen_pids.add(cursor_pid)
+            chain.append(by_pid[cursor_pid])
+            kids = children_in_set[cursor_pid]
+            cursor_pid = kids[0] if kids else None
+        if len(chain) != len(by_pid):
+            return candidates
+
+        open_owners: list[tuple[tuple[str, int, str | None], str]] = []
+        for item in chain:
+            _cli, cpid, _start = item
+            opened, ambiguous_open = _opened_dsh_sessions(cpid, self.runner)
+            if ambiguous_open:
+                return candidates
+            if opened:
+                open_owners.append((item, opened[0][0]))
+        if open_owners:
+            if len({cid for _item, cid in open_owners}) > 1:
+                return candidates
+            return [open_owners[-1][0]]
+
+        explicit_owners: list[tuple[tuple[str, int, str | None], str]] = []
+        for item in chain:
+            ccli, cpid, _start = item
+            ctx = _dsh_command_context(cpid, ccli, self.runner)
+            if ctx.ambiguous_id:
+                return candidates
+            if ctx.explicit_id is not None:
+                explicit_owners.append((item, ctx.explicit_id))
+        if explicit_owners:
+            if len({cid for _item, cid in explicit_owners}) > 1:
+                return candidates
+            return [explicit_owners[-1][0]]
+
+        return [chain[-1]]
+
     def probe(self, row: Mapping[str, Any], process: Any = None) -> Observation:
         """Adapt closing-backend process facts to a passive CLI observation.
 
@@ -1323,6 +1911,7 @@ class CliRecoveryAdapter:
             start = str(start) if isinstance(start, (str, int)) and str(start) else None
             if pid > 0:
                 candidates = [(context_cli, pid, start)]
+        candidates = self._collapse_dsh_wrapper_candidates(candidates, process)
         if len(candidates) > 1:
             return Observation(
                 "unknown",
@@ -1690,25 +2279,29 @@ class CliRecoveryAdapter:
                 # switch in the same PID must not inherit the old UUID.
         elif passive_chat is not None:
             supplied_chat = passive_chat
-        if normalized_cli in {"claude", "codex", "kiro"} and passive_error is not None:
+        if normalized_cli in {"claude", "codex", "dsh", "dsh-tui", "kiro"} and passive_error is not None:
+            if passive_error == "CLI_IDENTITY_AMBIGUOUS":
+                passive_reason = "multiple process-bound chat UUIDs were observed"
+                passive_gap = "multiple process-bound chat UUIDs were observed"
+                passive_source = "process_metadata"
+            elif passive_error == "CLI_IDENTITY_MISSING":
+                passive_reason = f"{normalized_cli} has no single recoverable foreground chat session"
+                passive_gap = f"{normalized_cli} exposes no process-bound foreground chat-id API"
+                passive_source = f"{normalized_cli}_pid"
+            else:
+                passive_reason = "argv identifies only the CLI startup session; current session evidence is unavailable"
+                passive_gap = "startup UUID lacks a current process-opened session artifact"
+                passive_source = "process_metadata"
             return finish(_require_process_start(
                 _with_process_identity(
                     Observation(
                         selected_activity,
-                        (
-                            "multiple process-bound chat UUIDs were observed"
-                            if passive_error == "CLI_IDENTITY_AMBIGUOUS"
-                            else "argv identifies only the CLI startup session; current session evidence is unavailable"
-                        ),
+                        passive_reason,
                         _process_identity(pid, process_start),
-                        (supplied_chat,) if supplied_chat is not None else (),
+                        (supplied_chat,) if (supplied_chat is not None and passive_error != "CLI_IDENTITY_MISSING") else (),
                         blocked_code=passive_error,
-                        source="process_metadata",
-                        evidence_gap=(
-                            "multiple process-bound chat UUIDs were observed"
-                            if passive_error == "CLI_IDENTITY_AMBIGUOUS"
-                            else "startup UUID lacks a current process-opened session artifact"
-                        ),
+                        source=passive_source,
+                        evidence_gap=passive_gap,
                     ),
                     pid,
                     process_start,

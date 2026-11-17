@@ -8,7 +8,7 @@ import unittest
 
 from goals_iterm_mcp.closing_backend import ClosingBackend
 from goals_iterm_mcp.errors import DomainError
-from goals_iterm_mcp.process_inspection import MacOSProcessProvider, ProcessRecord
+from goals_iterm_mcp.process_inspection import MacOSProcessProvider, ProcessRecord, _executable_name
 
 
 def make_row(session_id: str = "s1", *, tab: str = "t1", window: str = "w1"):
@@ -796,6 +796,92 @@ class ProcessInspectionTests(unittest.TestCase):
             },
         )
         self.assertFalse(result["verified"])
+
+    def test_executable_name_resolves_node_launched_dsh_and_dsh_tui_safely(self):
+        self.assertEqual(
+            _executable_name(
+                '/opt/homebrew/bin/node /opt/homebrew/bin/dsh headless --session-id s-1 "secret token=xyz"'
+            ),
+            "dsh",
+        )
+        self.assertEqual(
+            _executable_name(
+                "node --max-old-space-size 4096 /Users/u/.nvm/versions/node/v22/bin/dst --resume abc"
+            ),
+            "dsh-tui",
+        )
+        self.assertEqual(
+            _executable_name("node /tmp/node_modules/@deepseek-ai/dsh/lib/bin.js"),
+            "dsh",
+        )
+        self.assertEqual(
+            _executable_name(
+                "node /tmp/node_modules/@deepseek-harness-tui/dsh-tui/lib/types/dsh-adapter/host-entry.js"
+            ),
+            "dsh-tui",
+        )
+        self.assertEqual(_executable_name("node -e \"console.log('dsh')\""), "node")
+        self.assertEqual(_executable_name("node /tmp/other.js dsh --resume 123"), "node")
+
+    def test_diagnostic_preserves_dsh_session_ids_and_wrapper_cli(self):
+        row = make_row()
+        chat_id = "session-12345678-1234-4234-8234-1234567890ab"
+        probe = {
+            "state": "busy",
+            "reason": "active_job_on_tty",
+            "identity": {"pid": 202, "start": "dsh-start", "tty": "ttys004"},
+            "process": {
+                "available": True,
+                "identity": {"pid": 100, "start": "shell-start", "tty": "ttys004"},
+                "tty": "ttys004",
+                "active_jobs": [
+                    {
+                        "identity": {"pid": 201, "start": "tui-start", "tty": "ttys004"},
+                        "executable": "dsh-tui",
+                        "foreground": False,
+                    },
+                    {
+                        "identity": {"pid": 202, "start": "dsh-start", "tty": "ttys004"},
+                        "executable": "dsh",
+                        "foreground": True,
+                    },
+                ],
+                "stopped_jobs": [],
+            },
+            "cli_evidence": {
+                "recognized": True,
+                "cli": "dsh",
+                "identity": {"pid": 202, "start": "dsh-start", "tty": "ttys004"},
+                "activity": "busy",
+                "source": "process_open_file",
+                "reason": "active_job_on_tty",
+            },
+            "cli_sessions": [
+                {
+                    "cli": "dsh",
+                    "chat_uuid": chat_id,
+                    "identity_source": "process_open_file",
+                    "identity_status": "verified",
+                    "persistence_status": "saved",
+                }
+            ],
+        }
+
+        diag = ClosingBackend.diagnostic(row, probe)
+
+        self.assertTrue(diag["cli"]["recognized"])
+        self.assertEqual(diag["cli"]["name"], "dsh")
+        self.assertEqual(diag["cli"]["sessions"][0]["chat_uuid"], chat_id)
+        self.assertEqual(diag["cli"]["sessions"][0]["persistence_status"], "saved")
+        self.assertEqual(diag["close_readiness"]["status"], "blocked")
+
+        observed_wrapper_cli = ClosingBackend._observed_cli_name(
+            row,
+            probe["process"],
+            {"reason": "dsh-tui has no passive foreground chat-id API"},
+            (),
+        )
+        self.assertEqual(observed_wrapper_cli, "dsh-tui")
 
 
 if __name__ == "__main__":

@@ -135,12 +135,113 @@ class ProcessRecord:
         return result
 
 
+_NODE_STOP_FLAGS = frozenset(
+    {
+        "-c",
+        "--check",
+        "-e",
+        "--eval",
+        "-h",
+        "--help",
+        "-i",
+        "--interactive",
+        "-p",
+        "--print",
+        "-v",
+        "--version",
+    }
+)
+_NODE_VALUE_FLAGS = frozenset(
+    {
+        "-C",
+        "--conditions",
+        "--diagnostic-dir",
+        "--env-file",
+        "--env-file-if-exists",
+        "--experimental-loader",
+        "--heapsnapshot-signal",
+        "--import",
+        "--input-type",
+        "--inspect",
+        "--inspect-brk",
+        "--inspect-port",
+        "--loader",
+        "--max-old-space-size",
+        "-r",
+        "--redirect-warnings",
+        "--require",
+        "--run",
+        "--test-name-pattern",
+        "--test-reporter",
+        "--test-reporter-destination",
+        "--test-shard",
+        "--title",
+        "--watch-path",
+    }
+)
+_DSH_SCRIPT_BASENAMES = frozenset(
+    {"dsh", "dsh.js", "dsh.mjs", "dsh.cjs", "dsh-headless", "dsh-headless.js"}
+)
+_DSH_SCRIPT_SUFFIXES = (
+    "/@deepseek-ai/dsh/lib/bin.js",
+    "/dsh/lib/bin.js",
+    "/deepseek-harness/apps/cli/lib/bin.js",
+    "/deepseek-harness/apps/cli/src/bin.ts",
+    "/@deepseek-ai/dsh-headless/lib/bin.js",
+)
+_DSH_TUI_SCRIPT_BASENAMES = frozenset(
+    {"dsh-tui", "dsh-tui.js", "dsh-tui.mjs", "dst", "dst.js", "dst.mjs"}
+)
+_DSH_TUI_SCRIPT_SUFFIXES = (
+    "/@deepseek-harness-tui/dsh-tui/bin/dsh-tui.js",
+    "/@deepseek-harness-tui/dsh-tui/lib/types/dsh-adapter/host-entry.js",
+    "/dsh-tui/bin/dsh-tui.js",
+    "/dsh-tui/bin/tui.js",
+    "/dsh-tui/lib/types/dsh-adapter/host-entry.js",
+)
+
+
+def _node_cli_script_name(command: str) -> str | None:
+    """Resolve known Node-launched CLIs from the script path token only."""
+
+    tokens = command.split()
+    idx = 1
+    while idx < len(tokens):
+        token = tokens[idx]
+        if token == "--":
+            idx += 1
+            break
+        if not token.startswith("-"):
+            break
+        flag = token.split("=", 1)[0]
+        if flag in _NODE_STOP_FLAGS:
+            return None
+        if "=" not in token and token in _NODE_VALUE_FLAGS:
+            idx += 2
+            continue
+        idx += 1
+    if idx >= len(tokens):
+        return None
+
+    lowered = tokens[idx].replace("\\", "/").casefold()
+    base = posixpath.basename(lowered)
+    if base in _DSH_SCRIPT_BASENAMES or any(lowered.endswith(s) for s in _DSH_SCRIPT_SUFFIXES):
+        return "dsh"
+    if base in _DSH_TUI_SCRIPT_BASENAMES or any(
+        lowered.endswith(s) for s in _DSH_TUI_SCRIPT_SUFFIXES
+    ):
+        return "dsh-tui"
+    return None
+
+
 def _executable_name(command: str | None) -> str | None:
-    """Return only a basename from ``ps`` output.
+    """Return only a safe CLI/executable basename from ``ps`` output.
 
     This deliberately does not preserve arguments.  In particular, command
     arguments can contain credentials or terminal content and are not useful
-    for lifecycle identity.
+    for lifecycle identity.  For ``node`` processes it checks at most the
+    launched script token to distinguish supported JS CLIs such as ``dsh`` and
+    ``dsh-tui``.
     """
 
     command = _clean_text(command)
@@ -148,7 +249,10 @@ def _executable_name(command: str | None) -> str | None:
         return None
     first = command.split(None, 1)[0]
     first = first.lstrip("-")
-    return posixpath.basename(first) or None
+    name = posixpath.basename(first) or None
+    if name is not None and name.casefold() in {"node", "nodejs"}:
+        return _node_cli_script_name(command) or name
+    return name
 
 
 def _parse_ps_line(line: str) -> ProcessRecord | None:

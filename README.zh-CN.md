@@ -21,7 +21,7 @@ goals-iterm-mcp 通过 **iTerm2 Python API**，把支持 MCP 的 Agent 与电脑
 
 > 持续指导项目专用 iTerm 会话中的 Coding CLI，直到它完成登录问题的诊断、修复，并通过相关测试。每个阶段检查进度，必要时补充后续指令，最后按这些完成条件核对结果。不要重复提交仍在执行的任务；遇到超出本次范围的决策时询问我，完成后汇总改动和测试结果。
 
-0.2.4 版本提供 14 个 stdio MCP 工具：会话枚举、终端读写、窗口和标签页创建（默认切到前台）、会话激活（`activate_session`）、会话命名、只读的 `inspect_sessions` 诊断工具，以及 4 个关闭工具。4 个关闭工具最初在 0.2.0 版本引入。契约见[关闭工具实现规范](docs/closing-tools-spec.md)。
+0.2.5 版本提供 14 个 stdio MCP 工具：会话枚举、终端读写、窗口和标签页创建（默认切到前台）、会话激活（`activate_session`）、会话命名、只读的 `inspect_sessions` 诊断工具，以及 4 个关闭工具。4 个关闭工具最初在 0.2.0 版本引入。契约见[关闭工具实现规范](docs/closing-tools-spec.md)。
 
 ## 推荐搭配：goals-iterm-skill
 
@@ -55,10 +55,10 @@ goals-iterm-mcp 通过 **iTerm2 Python API**，把支持 MCP 的 Agent 与电脑
 
 ## 使用 uvx 运行
 
-0.2.4 已发布到 [PyPI](https://pypi.org/project/goals-iterm-mcp/0.2.4/)，该版本提供全部 14 个工具；无需克隆仓库即可运行：
+0.2.5 已发布到 [PyPI](https://pypi.org/project/goals-iterm-mcp/0.2.5/)，该版本提供全部 14 个工具；无需克隆仓库即可运行：
 
 ```sh
-uvx --python 3.12 goals-iterm-mcp@0.2.4 serve
+uvx --python 3.12 goals-iterm-mcp@0.2.5 serve
 ```
 
 Python 导入路径为 `goals_iterm_mcp`，启动命令为 `goals-iterm-mcp`。
@@ -68,18 +68,18 @@ Python 导入路径为 `goals_iterm_mcp`，启动命令为 `goals-iterm-mcp`。
 将下面的提示词复制给能够执行本机命令、配置 MCP 客户端的 Agent，把 `[MCP 客户端]` 替换为实际客户端，例如 Codex 桌面版或 Claude Code。Agent 需要访问本机 macOS；纯云端聊天无法连接本地 iTerm2。
 
 ```text
-请从 PyPI 安装 goals-iterm-mcp 0.2.4，并配置到 [MCP 客户端]。
+请从 PyPI 安装 goals-iterm-mcp 0.2.5，并配置到 [MCP 客户端]。
 项目地址：https://github.com/lucky-goals/goals-iterm-mcp
 
 1. 确认本机是 macOS，已安装并运行 iTerm2。检查 uv/uvx 是否存在；
    如果缺失，按 uv 官方说明安装。使用 Python 3.12，不要克隆仓库，
    不依赖项目目录中的 .venv。
 2. 执行以下命令验证包可以运行：
-   uvx --python 3.12 goals-iterm-mcp@0.2.4 --help
+   uvx --python 3.12 goals-iterm-mcp@0.2.5 --help
 3. 检查客户端现有 MCP 配置，保留其他设置。在用户级配置中添加或更新
    一个名为 iterm 的 stdio 服务，避免重复安装：
    command：本机 uvx 的绝对路径
-   args：["--python", "3.12", "goals-iterm-mcp@0.2.4", "serve"]
+   args：["--python", "3.12", "goals-iterm-mcp@0.2.5", "serve"]
    使用该客户端支持的配置格式和位置。修改已有配置前先备份，不改动其他服务。
 4. 如有需要，指导我开启 iTerm2 Python API 并批准它的授权弹窗。
    按客户端支持的方式重新加载 MCP；若需要我手动重启客户端，请明确告知。
@@ -124,7 +124,7 @@ git pull --ff-only
 
 按客户端支持的方式重启或重新连接 `iterm` MCP；必要时重启客户端。更新磁盘文件不会替换已经运行的服务进程。Codex 可在 **设置 → MCP servers → Restart** 重启连接，或重启 Codex，参见 [官方 MCP 配置说明](https://learn.chatgpt.com/docs/extend/mcp?surface=cli)。
 
-重连后，查询当前客户端实际加载的工具列表，并仅调用 `list_sessions` 验证连接。工具列表应与安装版本一致；0.2.4 版本应有 14 个工具，包含 `activate_session`、只读的 `inspect_sessions` 诊断工具，以及 `close_session`、`close_tab`、`close_window`、`clean_all_sessions`。独立进程握手成功不代表已有对话已经刷新工具；如果仍只显示旧接口，重连或新建对话后再次检查。升级验收不需要创建、关闭终端或发送输入。启动 Python 时禁止使用 `--reload`。
+重连后，查询当前客户端实际加载的工具列表，并仅调用 `list_sessions` 验证连接。工具列表应与安装版本一致；0.2.5 版本应有 14 个工具，包含 `activate_session`、只读的 `inspect_sessions` 诊断工具，以及 `close_session`、`close_tab`、`close_window`、`clean_all_sessions`。独立进程握手成功不代表已有对话已经刷新工具；如果仍只显示旧接口，重连或新建对话后再次检查。升级验收不需要创建、关闭终端或发送输入。启动 Python 时禁止使用 `--reload`。
 
 也可以复制下面的提示词交给本机 Agent：
 
@@ -166,7 +166,7 @@ MCP 客户端配置示例（替换为你的绝对路径）：
 
 可选参数：
 
-- `--read-only`：0.2.4 包暴露 4 个只读工具：`list_sessions`、`read_screen`、`read_history` 和 `inspect_sessions`。
+- `--read-only`：0.2.5 包暴露 4 个只读工具：`list_sessions`、`read_screen`、`read_history` 和 `inspect_sessions`。
 - `--session-id <ID>`：限制为指定会话，可重复传入。启用后禁止创建窗口/标签页，避免扩大访问范围。
 
 默认可以操作当前用户 iTerm 中的全部会话。读取和发送操作必须传入 `list_sessions` 返回的准确 `session_id`；关闭工具还支持下面说明的明确选择器。不通过焦点、通配符、前缀或标题猜测目标。
@@ -192,13 +192,13 @@ MCP 客户端配置示例（替换为你的绝对路径）：
 
 ### 只读会话能力审计
 
-`inspect_sessions` 是 0.2.4 包中的只读诊断工具。`session_id` 与 `nickname` 互斥。传入精确 `session_id` 或唯一昵称（去除首尾空白并折叠大小写）时检查一个授权会话；省略二者时检查当前授权可见的全部会话。选择器无效、有歧义、不可用或超出授权范围时，工具在不写入终端的情况下失败。
+`inspect_sessions` 是 0.2.5 包中的只读诊断工具。`session_id` 与 `nickname` 互斥。传入精确 `session_id` 或唯一昵称（去除首尾空白并折叠大小写）时检查一个授权会话；省略二者时检查当前授权可见的全部会话。选择器无效、有歧义、不可用或超出授权范围时，工具在不写入终端的情况下失败。
 
 每项结果包含会话、标签页和窗口身份，以及有限的 `prompt`、`process`、`cli`、`terminal_activity`、`business_acceptance` 和 `close_readiness` 部分。诊断可能报告证据是否可用、观测到的活动、稳定进程/CLI 身份、聊天持久化观察、阻碍代码和处置建议。`business_acceptance` 始终为 `not_observed`；`close_readiness` 仅供参考，其 `status` 为 `eligible_if_unchanged`、`blocked` 或 `unknown`，只有前者对应 `ready=true`。即使结果为 `ready: true`，也不代表获得授权或关闭一定成功；任何生命周期写入前都必须重新探测。该工具只读取证据，不会发送终端输入、退出 CLI、保存恢复回执或调用原生关闭。
 
 ### 关闭工具
 
-这 4 个关闭工具最初在 0.2.0 版本引入，并继续包含在 0.2.4 版本中。完整契约见[关闭工具实现规范](docs/closing-tools-spec.md)。
+这 4 个关闭工具最初在 0.2.0 版本引入，并继续包含在 0.2.5 版本中。完整契约见[关闭工具实现规范](docs/closing-tools-spec.md)。
 
 `close_session`、`close_tab` 和 `close_window` 必须且只能使用一个选择器。ID 按明确 ID 匹配，绝不会退化为昵称匹配。昵称是会话范围内的选择器：目录中的名称会先去除首尾空白并折叠大小写后匹配；产生歧义时返回错误。关闭标签页或窗口时，使用会话选择器会选中其所在的标签页或窗口。不支持按焦点、通配符或前缀定位。只要标签页或窗口包含任何超出允许列表的会话，就会拒绝关闭。
 
@@ -206,7 +206,7 @@ MCP 客户端配置示例（替换为你的绝对路径）：
 
 在首次中断、退出 CLI 或关闭原生对象之前，服务会先写入私有恢复记录，只保留元数据，不保存终端正文、凭据或聊天内容。识别出的聊天 CLI 必须在中断或退出前提供实际 chat ID；服务不会仅为发现 ID 而向运行中或未知的 CLI 发送聊天文本或斜杠命令。普通 shell 和普通任务的 `cli_sessions` 为空；未知 CLI 身份不会被悄悄降级成 shell 或普通任务。如果当前进程或聊天身份的证据不可用，或无法与目标绑定，操作会安全失败（清理时可以将该会话报告为跳过）。屏幕无输出、运行时间、低 CPU、看起来已完成的回答或会话列表中的 `in_progress` 都不是完成证据。CLI 退出有时间上限并会验证；如果无法验证退出，服务不会为该目标发出原生关闭请求，但 iTerm 配置的“退出时自动关闭”行为仍可能因 CLI 自身退出而移除标签页。服务不会按名称杀掉共享守护进程或其他进程。
 
-当前恢复支持有意保持狭窄。Claude 和 Codex 只能通过绑定 chat ID 的可信进程登记，或通过当前进程确实打开的 transcript/rollout 文件识别聊天；只出现在启动参数中的 UUID 会被报告，但仍会阻止中断。Kiro 的保存会话列表和启动参数都不能证明当前聊天身份，因此必须有与进程绑定的已知 ID；即使 `force=true`，无法证明的身份也会被拒绝。Cursor 的被动路径只接受由提供的 PID 当前打开的受认可日志文件得到的 UUID；仅有启动参数不够。除非有可信的生命周期证据，CLI 任务活动通常仍是 `unknown`；适配器不会自动捕获每个聊天或所有正在运行的 CLI。
+当前恢复支持有意保持狭窄。Claude 和 Codex 只能通过绑定 chat ID 的可信进程登记，或通过当前进程确实打开的 transcript/rollout 文件识别聊天；只出现在启动参数中的 UUID 会被报告，但仍会阻止中断。DSH（`dsh` / `dsh-tui`，含 `dst`）采用相同的受限规则：当前会话身份需要可信登记，或当前进程在 `sessions/` 下确实打开了根会话的 `session.lock`/JSONL 日志（自动忽略进程内活跃的 `subagent` 锁）；仅出现在命令行 `--session-id`/`--resume` 中的 ID 只标记为 `startup_only`，而 `dsh web` 等非单聊天模式保持未验证状态。Kiro 的保存会话列表和启动参数都不能证明当前聊天身份，因此必须有与进程绑定的已知 ID；即使 `force=true`，无法证明的身份也会被拒绝。Cursor 的被动路径只接受由提供的 PID 当前打开的受认可日志文件得到的 UUID；仅有启动参数不够。除非有可信的生命周期证据，CLI 任务活动通常仍是 `unknown`；适配器不会自动捕获每个聊天或所有正在运行的 CLI。
 
 结果包含 `operation`、`status`、`force`、`dry_run`、`target`、恢复记录 ID 和路径，以及已关闭、已跳过、失败和未知会话列表。`status` 为 `closed`、`partial`、`refused`、`noop`、`dry_run` 或 `unknown` 之一。每个会话结果包含 iTerm ID、昵称、`cli_sessions`、中断、退出和关闭状态。聊天记录包含 `cli`、`chat_uuid`、`cwd`、身份来源、持久化状态和结构化的恢复 executable/argv。`chat_uuid` 只是聊天标识；它本身不能证明历史已保存，也不能证明恢复命令已经测试成功，这些信息由独立的结果字段表示。关闭后会刷新拓扑，因为 API 确认不等于已经关闭。丢失或超时的响应会变成 `unknown`，不会自动重试。拒绝、失败和未知操作会以带结构化数据的 MCP 工具错误返回；仅有清理跳过时不算错误。部分结果会报告已完成的副作用，不会通过重新打开终端回滚。试运行不会发送输入、写入恢复记录、修改名称或关闭对象。
 
